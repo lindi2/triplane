@@ -568,6 +568,11 @@ int solo_player_menu(void) {
 
     int highest_mission = 0;
 
+    menu_position positions[] = {
+        { 110, 32, 1 }, { 110, 32+27*1, 1 }, { 110, 32+27*2, 1 },
+        { 110, 32+27*3, 1 }, { 110, 32+27*4, 1 }, { 110, 32+27*5, 1 },
+        { 300, 170, 1 }, { 0, 0, -1 } };
+
     if (findparameter("-solomenumission")) {
         sscanf(findparameter_arg("-solomenumission"), "%d", &mission_re_fly);
     }
@@ -581,6 +586,10 @@ int solo_player_menu(void) {
         if (roster[config.player_number[solo_country]].solo_mis_scores[solo_country][l])
             highest_mission = l + 1;
 
+    }
+
+    for (l = 0; l <= 5; l++) {
+        positions[l].active = (l <= highest_mission);
     }
 
     if (mission_re_fly != -1) {
@@ -614,7 +623,7 @@ int solo_player_menu(void) {
             flag = 2;
         }
 
-        menu_mouse(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2, positions);
 
         cursor->blit(x - 10, y - 10);
         do_all_clear();
@@ -707,6 +716,10 @@ void roster_menu(void) {
     Bitmap *ribbon[6];
     int l, l2, l3, l4;
     int rank;
+    menu_position positions[] = { 
+        { 282, 31, 0 /* !keysetmode */ }, { 264, 109, 0 /* !keysetmode */ },
+        { 58, 147, 1 }, { 141, 176, 0 /* keysetmode */ },
+        { 195, 178, 1 }, { 213, 178, 1 }, { 302, 194, 1 }, { 0, 0, -1 } };
 
     if (number == -1 && roster[0].pilotname[0])
         number = 0;
@@ -741,7 +754,10 @@ void roster_menu(void) {
     while (!exit_flag) {
         menu_keys(&exit_flag, &help_on);
 
-        menu_mouse(&x, &y, &n1, &n2);
+        positions[0].active = !keysetmode;
+        positions[1].active = !keysetmode;
+        positions[3].active = keysetmode;
+        menu_mouse(&x, &y, &n1, &n2, positions);
 
         if (number != -1) {
             if (!keysetmode) {
@@ -1102,6 +1118,43 @@ void options_menu(void) {
     Bitmap *opt1, *opt2;
     int optimode = 0;
     int l;
+    menu_position positions01[] = { /* for optimode 0 and 1 */
+        { 252, 29, 1 },
+        { 217, 64, 1 }, { 227, 64, 1 }, { 252, 64, 1 },
+        { 217, 74, 1 }, { 227, 74, 1 },
+        { 217, 84, 1 }, { 227, 84, 1 },
+        { 217, 94, 1 }, { 227, 94, 1 },
+        { 217, 104, 1 }, { 227, 104, 1 }, { 252, 104, 1 },
+        { 217, 114, 1 }, { 227, 114, 1 },
+        { 217, 124, 0 /* optimode==1 */ }, { 227, 124, 0 /* optimode==1 */ },
+        { 217, 134, 1 }, { 227, 134, 1 },
+        { 252, 134, 1 }, { 284, 172, 1 }, { 0, 0, -1 } };
+    menu_position positions2[] = { /* for optimode 2 */
+        { 252, 29, 1 },
+        { 217, 64, 1 }, { 227, 64, 1 }, { 252, 64, 1 },
+        { 217, 74, 1 }, { 227, 74, 1 },
+        { 252, 104, 1 }, { 252, 134, 1 }, { 284, 172, 1 },
+        { 0, 0, -1 } };
+    menu_position positions3[] = { /* for optimode 3 */
+        { 37, 14, 0 /* config.all_planes_are!=0 */ },
+        { 252, 29, 1 },
+        { 37, 35, 0 /* config.all_planes_are!=0 */ },
+        { 37, 56, 0 /* config.all_planes_are!=0 */ },
+        { 217, 64, 1 }, { 227, 64, 1 }, { 252, 64, 1 },
+        { 217, 74, 1 }, { 227, 74, 1 },
+        { 37, 77, 0 /* config.all_planes_are!=0 */ },
+        { 217, 84, 1 }, { 227, 84, 1 },
+        { 222, 94, 1 },
+        { 217, 104, 1 }, { 227, 104, 1 }, { 252, 104, 1 },
+        { 37, 114, 0 /* config.alliance!=0 */ },
+        { 217, 114, 1 }, { 227, 114, 1 },
+        { 217, 124, 1 }, { 227, 124, 1 },
+        { 217, 134, 1 }, { 227, 134, 1 }, { 252, 134, 1 },
+        { 37, 144, 0 /* config.alliance!=0 */ },
+        { 217, 144, 1 }, { 227, 144, 1 },
+        { 217, 154, 1 }, { 227, 154, 1 },
+        { 37, 172, 0 /* config.alliance!=0 */ },
+        { 284, 172, 1 }, { 0, 0, -1 } };
 
     char selitykset[4][80] = {
         "This form has questions about your vision.",
@@ -1123,7 +1176,24 @@ void options_menu(void) {
     while (!exit_flag) {
         menu_keys(&exit_flag, NULL);
 
-        menu_mouse(&x, &y, &n1, &n2);
+        if (optimode == 0) {
+            positions01[15].active = 0;
+            positions01[16].active = 0;
+        } else if (optimode == 1) {
+            positions01[15].active = 1;
+            positions01[16].active = 1;
+        } else if (optimode == 3) {
+            positions3[0].active = (config.all_planes_are != 0);
+            positions3[2].active = (config.all_planes_are != 0);
+            positions3[3].active = (config.all_planes_are != 0);
+            positions3[9].active = (config.all_planes_are != 0);
+            positions3[16].active = (config.alliance != 0);
+            positions3[24].active = (config.alliance != 0);
+            positions3[29].active = (config.alliance != 0);
+        }
+        menu_mouse(&x, &y, &n1, &n2,
+                   (optimode == 2) ? positions2 :
+                   (optimode == 3) ? positions3 : positions01);
         optionme->blit(0, 0);
         kohta[3 - optimode]->blit(248, 13);
         frost->printf(73, 43, "%s", selitykset[optimode]);
@@ -1836,6 +1906,11 @@ void transfer_menu(void) {
     Bitmap *color_bites[6];
     Bitmap *descs[6];
     int l;
+    menu_position positions[] = { 
+        { 90, 20, 1 },
+        { 78, 70, 1 }, { 78+1*80, 70, 1 }, { 78+2*80, 70, 1 },
+        { 78, 70+50, 1 }, { 78+1*80, 70+50, 1 }, { 78+2*80, 70+50, 1 },
+        { 0, 0, -1 } };
 
     optionme = new Bitmap("TRANS2");
 
@@ -1861,7 +1936,7 @@ void transfer_menu(void) {
     while (!exit_flag) {
         menu_keys(&exit_flag, NULL);
 
-        menu_mouse(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2, positions);
         optionme->blit(0, 0);
 
         color_bites[config.current_multilevel]->blit(39 + config.current_multilevel * 80 - (config.current_multilevel / 3) * 240,
@@ -2003,6 +2078,10 @@ void controls_menu(void) {
     Bitmap *napp[4];
     Bitmap *help;
     int active = 0;
+    menu_position positions[] = {
+        { 80, 15, 1 },
+        { 17, 28, 1 }, { 44, 28, 1 }, { 17, 51, 1 }, { 44, 51, 1 },
+        { 160, 65, 1 }, { 266, 65, 1 }, { 153, 130, 1 }, { 0, 0, -1 } };
 
     controlme = new Bitmap("NAPPIS");
     napp[0] = new Bitmap("NAPPRE");
@@ -2016,7 +2095,7 @@ void controls_menu(void) {
     while (!exit_flag) {
         menu_keys(&exit_flag, &help_on);
 
-        menu_mouse(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2, positions);
         controlme->blit(0, 0);
 
         napp[active]->blit((active % 2) * 27 + 10, (active / 2) * 23 + 22);
@@ -2219,6 +2298,21 @@ void assign_menu(void) {
     int lym[4] = { 0, 11, 24, 36 };
     int response;
     int help_on = 0;
+    menu_position positions[] = {
+        { 100, 15, 1 },
+        { 32, 48+lym[0], 1 }, { 185, 48+lym[0], 1 },
+        { 32, 48+lym[1], 1 }, { 185, 48+lym[1], 1 },
+        { 32, 48+lym[2], 1 },
+        { 185, 48+lym[2], 1 },
+        { 32, 48+lym[3], 1 }, { 138, 48+lym[3], 1 }, { 147, 48+lym[3], 1 },
+        { 185, 48+lym[3], 1 }, { 291, 48+lym[3], 1 }, { 300, 48+lym[3], 1 },
+        { 32, 121+lym[0], 1 }, { 185, 121+lym[0], 1 },
+        { 32, 121+lym[1], 1 }, { 185, 121+lym[1], 1 },
+        { 32, 121+lym[2], 1 },
+        { 185, 121+lym[2], 1 },
+        { 32, 121+lym[3], 1 }, { 138, 121+lym[3], 1 }, { 147, 121+lym[3], 1 },
+        { 185, 121+lym[3], 1 }, { 291, 121+lym[3], 1 }, { 300, 121+lym[3], 1 },
+        { 0, 0, -1 } };
 
     if (!roster[0].pilotname[0]) {
         response = small_warning("You have no pilots in the roster and\n"
@@ -2237,11 +2331,10 @@ void assign_menu(void) {
     ruksi = new Bitmap("RUKSI");
     help = new Bitmap("HELP5");
 
-
     while (!exit_flag) {
         menu_keys(&exit_flag, &help_on);
 
-        menu_mouse(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2, positions);
         acesme->blit(0, 0);
 
 
@@ -2511,7 +2604,8 @@ void aces_menu(void) {
     Bitmap *buttl;
     Bitmap *buttr;
     Bitmap *help;
-
+    menu_position positions[] = { { 239, 181, 1 }, { 257, 181, 1 },
+                                  { 280, 181, 1 }, { 0, 0, -1 } };
 
     if (is_there_sound && config.music_on) {
         sdl_stop_music();
@@ -2533,7 +2627,7 @@ void aces_menu(void) {
     while (!exit_flag) {
         menu_keys(&exit_flag, &help_on);
 
-        menu_mouse(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2, positions);
 
         if (!current_page)
             firstpage->blit(75, 34);
@@ -2657,6 +2751,10 @@ int kangas_menu(void) {
     int menuselect;
     int place_x = -2079;
     int showing_texts = 1;
+    menu_position positions[] = {
+        { 15, 18, 1},
+        { 8, 195, 1}, { 26, 195, 1}, { 62, 195, 1}, { 80, 195, 1},
+        { 0, 0, -1} };
 
     Bitmap *kangas = new Bitmap("KANGAS", 0);
     Bitmap *buttr = new Bitmap("BUTTR");
@@ -2696,7 +2794,7 @@ int kangas_menu(void) {
     while (!exit_flag) {
         menu_keys(&exit_flag, NULL);
 
-        menu_mouse(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2, positions);
         kangas->blit_fullscreen();
         kangas_terrain_to_screen(place_x);
 
@@ -2943,6 +3041,11 @@ void main_menu(void) {
     int help_on = 0;
     Bitmap *help;
 
+    menu_position positions[] = {
+        { 51, 40, 1 }, { 103, 40, 1 }, { 156, 40, 1 }, { 214, 40, 1 },
+        { 268, 40, 1 }, { 51, 77, 1 }, { 268, 77, 1 }, { 51, 120, 1 },
+        { 254, 120, 1 }, { 268, 169, 1 }, { 0, 0, -1 } };
+
     help = new Bitmap("HELP1");
 
     if (is_there_sound && config.music_on) {
@@ -2957,7 +3060,7 @@ void main_menu(void) {
     while (!exit_flag) {
         menu_keys(&exit_flag, &help_on);
 
-        menu_mouse(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2, positions);
         menu1->blit(0, 0);      // 0,0,799,599
         grid2->printf(34, 156, "Press F1\nfor Help");
 

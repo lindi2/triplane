@@ -23,8 +23,16 @@
 
 /* Support functions for menus */
 
+#include <stdlib.h>
+
+struct menu_position {
+  int x, y;
+  int active;
+};
+
 void menu_keys(int *exit_flag, int *help_flag);
-void menu_mouse(int *x, int *y, int *n1, int *n2);
+void menu_mouse(int *x, int *y, int *n1, int *n2,
+                const menu_position *positions = NULL);
 void wait_mouse_relase(int nokb = 0);
 void wait_press_and_release(void);
 

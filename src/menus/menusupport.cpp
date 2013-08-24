@@ -20,11 +20,12 @@
 
 /* Support functions for menus */
 
+#include "menus/menusupport.h"
 #include "io/sdl_compat.h"
 #include "io/mouse.h"
 #include <SDL.h>
 
-static int menu_n1 = 0, menu_n2 = 0;
+static int menu_mousetab = 0, menu_n1 = 0, menu_n2 = 0;
 
 void menu_keys(int *exit_flag, int *help_flag) {
     int ch;
@@ -41,12 +42,50 @@ void menu_keys(int *exit_flag, int *help_flag) {
             menu_n1 = 1;
         } else if (ch == SDLK_RETURN) {
             menu_n2 = 1;
+        } else if (ch == SDLK_TAB) {
+            menu_mousetab++;
         }
     }
 }
 
-void menu_mouse(int *x, int *y, int *n1, int *n2) {
+/*
+ * positions is an array, ordered first by y then by x, ending with an
+ * entry with active=-1; or NULL if none
+ */
+void menu_mouse(int *x, int *y, int *n1, int *n2,
+               const menu_position *positions) {
+    const menu_position *p;
+
     koords(x, y, n1, n2);
+
+    if (positions == NULL)
+        menu_mousetab = 0;
+    if (menu_mousetab > 0) {
+        for (p = positions; p->active >= 0; p++) {
+            if (p->active == 0 ||
+                p->y < *y ||
+                (p->y == *y && p->x <= *x)) {
+                continue;
+            }
+            if (menu_mousetab == 1)
+                break;
+            menu_mousetab--;
+        }
+
+        if (p->active < 0) { // no next found, so find first active
+            for (p = positions; p->active == 0; p++)
+                ;
+        }
+
+        if (p->active == 1) {
+            *x = p->x;
+            *y = p->y;
+            hiiri_to(*x, *y);
+        }
+
+        menu_mousetab = 0;
+    }
+
     if (menu_n1 == 1) {
         *n1 = 1;
         menu_n1 = 0;

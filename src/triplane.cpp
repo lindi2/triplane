@@ -607,12 +607,14 @@ int small_warning(const char *message) {
     int flag = 1, exit_flag = 0;
     int x, y, n1, n2;
     int response = 0;
+    menu_position positions[] = {
+      { 111, 124, 1 }, { 206, 124, 1 }, { 0, 0, -1 } };
 
     warnkuva = new Bitmap("WARN2");
 
     while (flag) {
         menu_keys(&exit_flag, NULL);
-        menu_mouse(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2, positions);
 
         if (exit_flag) {
             flag = 0;
@@ -1902,6 +1904,10 @@ void do_aftermath(int show_it_all) {
     int best_in_record = 0;
     int sisennys;
     int mission_success = 0;
+    menu_position positions[] = {
+      { 62, 195, 0 /* playing_solo */ }, { 80, 195, 1 }, { 0, 0, -1 } };
+
+    positions[0].active = playing_solo;
 
     fly = new Bitmap("FLY");
     exit = new Bitmap("EXIT");
@@ -2261,7 +2267,7 @@ void do_aftermath(int show_it_all) {
             menu_keys(&exit_flag, NULL);
             if (exit_flag)
                 l = 0;
-            menu_mouse(&x, &y, &n1, &n2);
+            menu_mouse(&x, &y, &n1, &n2, positions);
 
             if (n1 || n2) {
                 if (playing_solo) {
