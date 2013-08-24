@@ -2275,7 +2275,7 @@ void do_aftermath(int show_it_all) {
 
         }
 
-        if (config.player_type[l] == 3 && config.player_number[l] != -1) {
+        if (config.player_type[l] == 3 && config.player_number[l] >= 0) {
             roster[config.player_number[l]].multi_mis_flown++;
 
             tempt = 0;

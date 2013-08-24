@@ -2352,9 +2352,10 @@ void assign_menu(void) {
 
             ruksi->blit(28 + lx, 45 + ly + lym[config.player_type[l]]);
 
-            if (config.player_number[l] != -1) {
+            if (config.player_number[l] == -2) {
+                frost->printf(46 + lx, 82 + ly, "(don't save in roster)");
+            } else if (config.player_number[l] != -1) {
                 frost->printf(46 + lx, 82 + ly, roster[config.player_number[l]].pilotname);
-
             }
 
             for (l2 = 0; l2 < 4; l2++) {
@@ -2394,8 +2395,11 @@ void assign_menu(void) {
 
                 if (menusubselect2 == 1) {
                     for (l = 0; l < 4; l++) {
-                        if (l == menusubselect1)
+                        if (l == menusubselect1) {
+                            if (config.player_number[l] == -2)
+                                config.player_number[l] = -1; // updated below
                             continue;
+                        }
 
                         config.player_type[l] = 0;
                         config.player_number[l] = -1;
@@ -2416,11 +2420,14 @@ void assign_menu(void) {
                     config.player_number[menusubselect1] = -1;
                 else {
                     if (config.player_number[menusubselect1] == -1) {
-
-                        for (l = 0; l < MAX_PLAYERS_IN_ROSTER; l++) {
-                            if (!roster[l].pilotname[0]) {
-                                config.player_type[menusubselect1] = 0;
-                                config.player_number[menusubselect1] = -1;
+                        for (l = 0; l <= MAX_PLAYERS_IN_ROSTER; l++) {
+                            if (l == MAX_PLAYERS_IN_ROSTER || !roster[l].pilotname[0]) {
+                                if (menusubselect2 == 3) {
+                                    config.player_number[menusubselect1] = -2;
+                                } else {
+                                    config.player_type[menusubselect1] = 0;
+                                    config.player_number[menusubselect1] = -1;
+                                }
                                 break;
                             } else {
                                 for (l3 = 0; l3 < 4; l3++) {
@@ -2440,12 +2447,6 @@ void assign_menu(void) {
                             }
 
                         }
-                        if (l == MAX_PLAYERS_IN_ROSTER) {
-                            config.player_type[menusubselect1] = 0;
-                            config.player_number[menusubselect1] = -1;
-
-                        }
-
                     }
                 }
 
@@ -2460,114 +2461,56 @@ void assign_menu(void) {
                 break;
 
             case 3:
-                ly = 0;
                 lx = config.player_number[menusubselect1];
-                l2 = lx + 1;
-
-                while (!ly) {
-                    ly = 1;
-
-                    if (lx == l2) {
-                        l2 = -1;
-                        break;
+                l2 = lx;
+                do {
+                    l2 = (l2 == -2) ? 0 : l2 + 1;
+                    if (l2 >= MAX_PLAYERS_IN_ROSTER || (l2 >= 0 && !roster[l2].pilotname[0])) {
+                        if (config.player_type[menusubselect1] == 3)
+                            l2 = -2;
+                        else
+                            l2 = 0;
                     }
-
-                    if (l2 != -1) {
-                        if (!roster[l2].pilotname[0]) {
-                            ly = 0;
-                            l2 = -1;
-                            continue;
-                        }
-
-
-                        for (l = 0; l < 4; l++) {
-                            if (l == menusubselect1)
-                                continue;
-
-                            if (config.player_number[l] == l2) {
-                                l2++;
-                                ly = 0;
-                                continue;
-                            }
-
-
-                        }
-
-                    } else {
-
-                        l2 = -1;
+                    if (l2 == lx)
+                        l2 = (config.player_type[menusubselect1] == 3) ? -2 : -1;
+                    if (l2 < 0)
                         break;
+                    for (l = 0; l < 4; l++) {
+                        if (l == menusubselect1)
+                            continue;                        
+                        if (config.player_number[l] == l2)
+                            break;
                     }
-                }
-
+                } while (l != 4);
                 config.player_number[menusubselect1] = l2;
-
                 break;
 
             case 4:
-                ly = 0;
                 lx = config.player_number[menusubselect1];
-                l2 = lx - 1;
-                if (l2 < -1)
-                    l2 = -1;
-
-
-
-                while (!ly) {
-                    ly = 1;
-
-                    if (l2 != -1) {
-
-                        for (l = 0; l < 4; l++) {
-                            if (l == menusubselect1)
-                                continue;
-
-                            if (config.player_number[l] == l2) {
-                                l2--;
-                                ly = 0;
+                l2 = lx;
+                do {
+                    if (l2 == 0 && config.player_type[menusubselect1] == 3) {
+                        l2 = -2;
+                    } else if (l2 <= 0) {
+                        for (l2 = MAX_PLAYERS_IN_ROSTER - 1; l2 >= 0; l2--)
+                            if (roster[l2].pilotname[0])
                                 break;
-                            }
-
-
-                        }
-
                     } else {
-
-                        l2 = -1;
+                        l2--;
+                    }
+                    if (l2 == lx)
+                        l2 = (config.player_type[menusubselect1] == 3) ? -2 : -1;
+                    if (l2 < 0)
                         break;
+                    for (l = 0; l < 4; l++) {
+                        if (l == menusubselect1)
+                            continue;                        
+                        if (config.player_number[l] == l2)
+                            break;
                     }
-                }
-
-                if (l2 == -1) {
-                    for (l2 = MAX_PLAYERS_IN_ROSTER - 1; l2 >= 0; l2--) {
-                        if (roster[l2].pilotname[0]) {
-                            for (l = 0; l < 4; l++) {
-                                if (l == menusubselect1)
-                                    continue;
-
-                                if (config.player_number[l] == l2) {
-                                    break;
-
-                                }
-                            }
-
-                            if (l == 4)
-                                break;
-
-                        }
-                    }
-
-
-                    config.player_number[menusubselect1] = l2;
-                    break;
-                }
-
+                } while (l != 4);
                 config.player_number[menusubselect1] = l2;
-
-
-
                 break;
-
 
             }
         }
@@ -2579,6 +2522,10 @@ void assign_menu(void) {
 
     for (l = 0; l < 4; l++) {
         if (config.player_number[l] == -1 && (config.player_type[l] == 1 || config.player_type[l] == 3)) {
+            config.player_type[l] = 0;
+            config.player_number[l] = -1;
+        }
+        if (config.player_number[l] == -2 && config.player_type[l] != 3) {
             config.player_type[l] = 0;
             config.player_number[l] = -1;
         }
@@ -3107,8 +3054,11 @@ void main_menu(void) {
 
                 for (l = 0; l < 4; l++) {
                     if (config.player_type[l] == 3) {
-                        frost->printf(110, 130 + l * 11, "%d. %s", l + 1, roster[config.player_number[l]].pilotname);
-
+                        frost->printf(110, 130 + l * 11, "%d. %s",
+                                      l + 1,
+                                      (config.player_number[l] == -2)
+                                      ? "Anonymous pilot"
+                                      : roster[config.player_number[l]].pilotname);
                     }
 
                     if (config.player_type[l] == 2) {
