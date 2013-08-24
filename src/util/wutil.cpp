@@ -270,3 +270,28 @@ const char *findparameter_arg(const char *jono) {
     else
         return NULL;
 }
+
+// Is ch a normal printable character?
+// (used to limit network player names and chat messages)
+// should be a subset of the characters accepted by frost->scanf
+int printable_char(int ch) {
+    return (ch >= 32 && ch <= 126);
+}
+
+// Is s an alphanumeric string of length 0 to len-1?
+int check_strict_string(const char *s, int len) {
+    int i;
+    for (i = 0; i < len && s[i] != '\0'; i++)
+        if (!isalnum(s[i]))
+            return 0;
+    return (i < len);
+}
+
+// Is s a printable string of length 0 to len-1?
+int check_printable_string(const char *s, int len) {
+    int i;
+    for (i = 0; i < len && s[i] != '\0'; i++)
+        if (!printable_char(s[i]))
+            return 0;
+    return (i < len);
+}

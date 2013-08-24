@@ -26,6 +26,8 @@
 
 #include "triplane.h"
 #include "io/joystick.h"
+#include "io/netclient.h"
+#include "io/chat.h"
 #include "gfx/gfx.h"
 #include "menus/menusupport.h"
 #include "menus/tripmenu.h"
@@ -41,6 +43,7 @@
 #include <time.h>
 #include <string.h>
 #include "io/trip_io.h"
+#include "io/network.h"
 #include "io/sdl_compat.h"
 #include "settings.h"
 
@@ -1056,6 +1059,8 @@ void get_controls_for_player(int player,
         *roll = 0;
         *guns = 0;
     }
+
+    network_controls_for_player(player, down, up, power, roll, guns, bombs);
 }
 
 void controls(void) {
@@ -1715,6 +1720,15 @@ void main_engine(void) {
     if (!draw_with_vircr_mode)
         update_vircr_mode = 0;
 
+    all_bitmaps_send_now();
+
+    network_ping(15);
+    while (!network_last_ping_done()) {
+        nopeuskontrolli();
+    }
+
+    network_change_game_mode(1);
+
     while (flag) {
         update_key_state();
 
@@ -1925,6 +1939,8 @@ void main_engine(void) {
             mission_duration++;
         }
     }
+
+    network_change_game_mode(0);
 
     if (!draw_with_vircr_mode)
         update_vircr_mode = 1;
@@ -2943,6 +2959,8 @@ void load_up(void) {
     loading_text("Loading mouse cursor.");
     cursor = new Bitmap("CURSOR");
 
+    loading_text("Loading data for chat support.");
+    chat_overlay_init(frost);
 }
 
 
@@ -3742,7 +3760,19 @@ int main(int argc, char *argv[]) {
     loading_text("\nData loading started.");
     load_up();
 
-
+    if (findparameter("-networkhost")) {
+        // frost was loaded in load_up() above
+        network_activate_host((findparameter_arg("-listenaddr") != NULL)
+                              ? findparameter_arg("-listenaddr")
+                              : config.neth_listenaddr,
+                              (findparameter_arg("-listenport") != NULL)
+                              ? atoi(findparameter_arg("-listenport"))
+                              : config.neth_listenport,
+                              (findparameter_arg("-netpassword") != NULL)
+                              ? findparameter_arg("-netpassword")
+                              : config.neth_password,
+                              frost);
+    }
 
     if (loading_texts) {
         printf("\nLoading complete. Press a key to continue.");
@@ -3779,6 +3809,53 @@ int main(int argc, char *argv[]) {
         init_vga("PALET5");
 
     wait_mouse_relase();
+
+    if (findparameter_arg("-netclient") != NULL) {
+        const char *host = findparameter_arg("-netclient");
+        int port = config.netc_port;
+        char playername[21];
+        char password[21];
+
+        strncpy(playername, config.netc_playername, 20);
+        playername[20] = 0;
+        strncpy(password, config.netc_password, 20);
+        password[20] = 0;
+
+        if (findparameter_arg("-port") != NULL) {
+            port = atoi(findparameter_arg("-port"));
+        }
+        if (findparameter_arg("-netplayer") != NULL) {
+            strncpy(playername, findparameter_arg("-netplayer"), 20);
+            playername[20] = 0;
+        }
+        if (findparameter_arg("-netpassword") != NULL) {
+            strncpy(password, findparameter_arg("-netpassword"), 20);
+            password[20] = 0;
+        }
+
+        if (findparameter_arg("-netcontrol") != NULL) {
+            if (config.netc_solo_controls < 0 ||
+                !roster[config.netc_solo_controls].pilotname[0])
+                config.netc_solo_controls = 0;
+            if (!roster[config.netc_solo_controls].pilotname[0]) {
+                fprintf(stderr, "Please add a pilot to the roster for the -netcontol option!\n");
+            } else {
+                if (strcmp(findparameter_arg("-netcontrol"), "r") == 0)
+                    netclient_activate_controls(0, config.netc_solo_controls);
+                else if (strcmp(findparameter_arg("-netcontrol"), "b") == 0)
+                    netclient_activate_controls(1, config.netc_solo_controls);
+                else if (strcmp(findparameter_arg("-netcontrol"), "g") == 0)
+                    netclient_activate_controls(2, config.netc_solo_controls);
+                else if (strcmp(findparameter_arg("-netcontrol"), "y") == 0)
+                    netclient_activate_controls(3, config.netc_solo_controls);
+            }
+        }
+
+        netclient_loop(host, port, playername, password);
+
+        clean_memory();
+        return 0;
+    }
 
     main_menu();
     save_roster();
@@ -3825,6 +3902,8 @@ int main(int argc, char *argv[]) {
     }
 
     save_config();
+
+    network_quit();
 
     clean_memory();
 

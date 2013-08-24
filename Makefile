@@ -7,20 +7,20 @@ SDL_CONFIG  ?= sdl2-config
 VERSION      = 1.0.8
 CFLAGS      := -Wall -Isrc $(OPTIFLAG) $(CFLAGS_NOSDL) `$(SDL_CONFIG) --cflags` -DHAVE_SDL_MIXER "-DTRIPLANE_DATA=\"$(PREFIX)/share/games/triplane\"" "-DTRIPLANE_VERSION=\"$(VERSION)\""
 LDFLAGS      = 
-LIBS        := `$(SDL_CONFIG) --libs` -lSDL2_mixer -lm
+LIBS        := `$(SDL_CONFIG) --libs` -lSDL2_mixer -lz -lm
 INSTALL_DATA     ?= install -m 644
 INSTALL_PROGRAM  ?= install
 
 COMMON_OBJS = src/gfx/bitmap.o src/gfx/font.o \
 	src/gfx/gfx.o src/util/wutil.o src/util/random.o \
-	src/io/sdl_compat.o src/io/video.o \
-	src/io/mouse.o src/io/dksfile.o src/io/timing.o
+	src/io/sdl_compat.o src/io/video.o src/io/network.o \
+	src/io/chat.o src/io/mouse.o src/io/dksfile.o src/io/timing.o
 TRIPLANE_OBJS = src/triplane.o src/world/tripai.o \
 	src/world/tripmis.o src/gfx/fades.o \
 	src/menus/menusupport.o src/menus/tripmenu.o \
 	src/world/terrain.o src/world/fobjects.o src/world/tmexept.o \
 	src/gfx/extra.o src/settings.o src/world/plane.o src/io/joystick.o src/io/sound.o \
-	src/world/tripaudio.o
+	src/world/tripaudio.o src/io/netclient.o
 LVLEDIT_OBJS = src/tools/lvledit/lvledit.o
 PGDVIEW_OBJS = src/tools/pgdview/pgdview.o
 PCX2PGD_OBJS = src/tools/pcx2pgd/pcx2pgd.o

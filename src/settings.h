@@ -156,7 +156,16 @@ struct configuration {
     int32_t joystick[2];
     int32_t joystick_calibrated[2];
 
+    char netc_host[80];
+    int32_t netc_port;
+    char netc_password[40];
+    char netc_playername[40];
+    int32_t netc_solo_controls;
+    int32_t netc_controlplanes;
 
+    char neth_listenaddr[80];
+    int32_t neth_listenport;
+    char neth_password[40];
 };
 
 extern configuration config;

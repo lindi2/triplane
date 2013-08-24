@@ -32,6 +32,7 @@
 #include "gfx/bitmap.h"
 #include "gfx/gfx.h"
 #include "io/trip_io.h"
+#include "io/network.h"
 #include "util/wutil.h"
 #include <assert.h>
 #include <SDL.h>
@@ -39,7 +40,7 @@
 
 #define RLE_REPETITION_MARK 192
 
-#define MAX_BITMAPS 8192
+#define MAX_BITMAPS 8192        /* must be <= 65536 for netsend */
 Bitmap *all_bitmaps[MAX_BITMAPS];
 int all_bitmaps_last_alloc = -1;
 
@@ -80,6 +81,26 @@ void all_bitmaps_refresh(void) {
     }
 }
 
+void all_bitmaps_resend_if_sent(void) {
+    int i;
+
+    for (i = 0; i < MAX_BITMAPS; i++) {
+        if (all_bitmaps[i] == NULL)
+            continue;
+        all_bitmaps[i]->resend_bitmapdata();
+    }
+}
+
+void all_bitmaps_send_now(void) {
+    int i;
+
+    for (i = 0; i < MAX_BITMAPS; i++) {
+        if (all_bitmaps[i] == NULL)
+            continue;
+        all_bitmaps[i]->send_bitmapdata();
+    }
+}
+
 void Bitmap::refresh_sdlsurface() {
     SDL_Surface *tmps;
 
@@ -113,6 +134,22 @@ void Bitmap::refresh_sdlsurface() {
 
     SDL_FreeSurface(tmps);
     SDL_FreePalette(tmppal);
+}
+
+void Bitmap::send_bitmapdata() {
+    if (!data_sent) {
+        data_sent = netsend_bitmapdata(id, width, height, hastransparency, image_data);
+    }
+}
+
+void Bitmap::resend_bitmapdata() {
+    if (data_sent) {
+        netsend_bitmapdata(id, width, height, hastransparency, image_data);
+    }
+}
+
+void Bitmap::clear_data_sent() {
+    data_sent = 0;
 }
 
 Bitmap::Bitmap(const char *image_name, int transparent) {
@@ -183,6 +220,7 @@ Bitmap::Bitmap(const char *image_name, int transparent) {
     name = image_name;
     hastransparency = transparent;
     sdlsurface = NULL;
+    data_sent = 0;
     id = all_bitmaps_add(this);
     refresh_sdlsurface();
 }
@@ -198,6 +236,7 @@ Bitmap::Bitmap(int width, int height,
     this->name = name;
     this->hastransparency = hastransparency;
     this->sdlsurface = NULL;
+    this->data_sent = 0;
 
     if (copy_image_data) {
         this->image_data = (unsigned char *) walloc(width * height);
@@ -221,12 +260,16 @@ Bitmap::~Bitmap() {
     }
     if (!external_image_data)
         free(image_data);
+    netsend_bitmapdel(id);
 }
 
 void Bitmap::blit_fullscreen(void) {
     assert(current_mode == VGA_MODE);
     assert(!hastransparency);
     pointti = image_data;
+
+    send_bitmapdata();
+    netsend_bitmapblitfs(id);
 
     if (update_vircr_mode)
         memcpy(vircr, image_data, 320 * 200);
@@ -273,6 +316,18 @@ void Bitmap::blit(int xx, int yy, int rx, int ry, int rx2, int ry2) {
 
     if (xx + width <= rx || xx > rx2 || yy + height <= ry || yy > ry2)
         return;             /* no part is inside the clip rectangle */
+
+    send_bitmapdata();
+    if ((rx == 0 &&             /* no clip rectangle set */
+         ry == 0 &&
+         rx2 == ((current_mode == SVGA_MODE) ? 799 : 319) &&
+         ry2 == ((current_mode == SVGA_MODE) ? 599 : 199)) ||
+        /* or all of the bitmap is inside the clip rectangle */
+        (xx >= rx && xx + width - 1 <= rx2 &&
+         yy >= ry && yy + height - 1 <= ry2))
+        netsend_bitmapblit(id, xx, yy);
+    else
+        netsend_bitmapblitclipped(id, xx, yy, rx, ry, rx2, ry2);
 
     if (update_vircr_mode) {
         fromminy = (yy >= ry) ? 0 : ry - yy;
@@ -345,6 +400,7 @@ Bitmap::Bitmap(int x1, int y1, int xl, int yl, Bitmap * source_image) {
     name = source_image->name;
     hastransparency = source_image->hastransparency;
     sdlsurface = NULL;
+    data_sent = 0;
     id = all_bitmaps_add(this);
     refresh_sdlsurface();
 }
@@ -367,6 +423,7 @@ Bitmap::Bitmap(int x, int y, int w, int h) {
     name = "from_vircr";
     hastransparency = 0;
     sdlsurface = NULL;
+    data_sent = 0;
     id = all_bitmaps_add(this);
     refresh_sdlsurface();
 }
@@ -393,6 +450,10 @@ void Bitmap::blit_to_bitmap(Bitmap * to, int xx, int yy) {
             to_point[laskx + xx + (lasky + yy) * kokox] = image_data[laskx + lasky * width];
         }
 
+    if (to->data_sent) {
+      send_bitmapdata();
+      netsend_blittobitmap(id, to->id, xx, yy);
+    }
     to->refresh_sdlsurface();
 }
 
@@ -430,6 +491,7 @@ Bitmap *rotate_bitmap(Bitmap * picture, int degrees) {
         }
     free(temp_data);
 
+    picture2->clear_data_sent();
     picture2->refresh_sdlsurface();
     return picture2;
 }

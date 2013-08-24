@@ -33,6 +33,7 @@ class Bitmap {
     int hastransparency;
     int id;                     // a unique ID for this Bitmap
     SDL_Texture *sdlsurface;    // the field name derives from SDL 1.x legacy
+    int data_sent;              // has image_data been sent to the network?
 
   public:
       Bitmap(const char *image_name, int transparent = 1);
@@ -50,9 +51,14 @@ class Bitmap {
     void blit_to_bitmap(Bitmap * to, int xx, int yy);
     unsigned char *info(int *width = NULL, int *height = NULL);
     void refresh_sdlsurface();
+    void clear_data_sent();
+    void send_bitmapdata();
+    void resend_bitmapdata();
 };
 
 void all_bitmaps_refresh(void);
+void all_bitmaps_resend_if_sent(void);
+void all_bitmaps_send_now(void);
 Bitmap *rotate_bitmap(Bitmap * picture, int degrees);
 int bitmap_exists(const char *name);
 

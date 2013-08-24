@@ -27,8 +27,11 @@
 #include <SDL.h>
 #include <time.h>
 #include <string.h>
+#include <assert.h>
 #include "io/joystick.h"
 #include "io/sdl_compat.h"
+#include "io/network.h"
+#include "io/netclient.h"
 #include "util/wutil.h"
 #include "world/plane.h"
 #include "world/tripaudio.h"
@@ -2283,6 +2286,40 @@ void controls_menu(void) {
 
 }
 
+/* Guess an appropriate roster entry for network client clientname */
+static void set_roster_from_clientname(int playernum,
+                                       const char *clientname) {
+    int i, l;
+
+    if (clientname[0] == '\0') {
+        if (config.player_type[playernum] == 3)
+            config.player_number[playernum] = -2;
+        return;
+    }
+
+    for (i = 0; i < MAX_PLAYERS_IN_ROSTER; i++) {
+        if (roster[i].pilotname[0] == '\0')
+            break;
+
+        if (strcmp(clientname, roster[i].pilotname) == 0) {
+            /* clientname found at i; check that it is not already used */
+            for (l = 0; l < 4; l++) {
+                if (l == playernum)
+                    continue;
+                if (config.player_number[l] == i)
+                    break;
+            }
+            if (l == 4) {
+                config.player_number[playernum] = i;
+                return;
+            }
+        }
+    }
+
+    /* clientname was not found */
+    if (config.player_type[playernum] == 3)
+        config.player_number[playernum] = -2;
+}
 
 void assign_menu(void) {
     int exit_flag = 0;
@@ -2297,18 +2334,22 @@ void assign_menu(void) {
     int lym[4] = { 0, 11, 24, 36 };
     int response;
     int help_on = 0;
+    int plane_colors[4] = { 32, 144, 96, 71 };
+    char clientname[4][21] = { "", "", "", "" };
+    int clientcolor[4] = { -1, -1, -1, -1 };
     menu_position positions[] = {
+        /* those with active=0 are for network_is_active() */
         { 100, 15, 1 },
         { 32, 48+lym[0], 1 }, { 185, 48+lym[0], 1 },
         { 32, 48+lym[1], 1 }, { 185, 48+lym[1], 1 },
-        { 32, 48+lym[2], 1 },
-        { 185, 48+lym[2], 1 },
+        { 32, 48+lym[2], 1 }, { 138, 48+lym[2], 0 }, { 147, 48+lym[2], 0 },
+        { 185, 48+lym[2], 1 }, { 291, 48+lym[2], 0 }, { 300, 48+lym[2], 0 },
         { 32, 48+lym[3], 1 }, { 138, 48+lym[3], 1 }, { 147, 48+lym[3], 1 },
         { 185, 48+lym[3], 1 }, { 291, 48+lym[3], 1 }, { 300, 48+lym[3], 1 },
         { 32, 121+lym[0], 1 }, { 185, 121+lym[0], 1 },
         { 32, 121+lym[1], 1 }, { 185, 121+lym[1], 1 },
-        { 32, 121+lym[2], 1 },
-        { 185, 121+lym[2], 1 },
+        { 32, 121+lym[2], 1 }, { 138, 121+lym[2], 0 }, { 147, 121+lym[2], 0 },
+        { 185, 121+lym[2], 1 }, { 291, 121+lym[2], 0 }, { 300, 121+lym[2], 0 },
         { 32, 121+lym[3], 1 }, { 138, 121+lym[3], 1 }, { 147, 121+lym[3], 1 },
         { 185, 121+lym[3], 1 }, { 291, 121+lym[3], 1 }, { 300, 121+lym[3], 1 },
         { 0, 0, -1 } };
@@ -2329,6 +2370,33 @@ void assign_menu(void) {
 
     ruksi = new Bitmap("RUKSI");
     help = new Bitmap("HELP5");
+
+    if (network_is_active()) {
+        for (l = 0; l < 4; l++) {
+            network_get_allowed_controls(l, clientname[l]);
+            clientcolor[l] = network_find_preferred_color(clientname[l]);
+        }
+    }
+
+    if (network_is_active()) {
+        positions[6].active = 1;
+        positions[7].active = 1;
+        positions[9].active = 1;
+        positions[10].active = 1;
+        positions[22].active = 1;
+        positions[23].active = 1;
+        positions[25].active = 1;
+        positions[26].active = 1;
+    } else {
+        positions[6].active = 0;
+        positions[7].active = 0;
+        positions[9].active = 0;
+        positions[10].active = 0;
+        positions[22].active = 0;
+        positions[23].active = 0;
+        positions[25].active = 0;
+        positions[26].active = 0;
+    }
 
     while (!exit_flag) {
         menu_keys(&exit_flag, &help_on);
@@ -2378,6 +2446,38 @@ void assign_menu(void) {
                 menuselect = 4;
                 //frost->printf(82,177,"Select previous pilot");        
 
+            }
+        }
+
+        if (network_is_active()) {
+            for (l = 0; l < 4; l++) {
+                ly = (l / 2) * 73;
+                lx = (l % 2) ? 153 : 0;
+
+                if (config.player_type[l] != 1 && config.player_type[l] != 3)
+                    continue;
+
+                if (clientname[l][0] == '\0') {
+                    frost->printf(46 + lx, 70 + ly, "Controlled by host only");
+                } else {
+                    frost->printf(46 + lx, 70 + ly, "Net:  %s", clientname[l]);
+                    if (clientcolor[l] >= 0 && clientcolor[l] <= 3)
+                        fill_vircr(46 + lx + 16, 70 + ly + 1,
+                                   46 + lx + 18, 70 + ly + 3,
+                                   plane_colors[clientcolor[l]]);
+                }
+
+                if (x >= (134 + lx) && x < (143 + lx) && y >= (67 + ly) && y <= (77 + ly)) {
+                    menusubselect1 = l;
+                    menuselect = 5;
+                    //frost->printf(82,177,"Select next network player");
+                }
+
+                if (x >= (143 + lx) && x <= (151 + lx) && y >= (67 + ly) && y <= (77 + ly)) {
+                    menusubselect1 = l;
+                    menuselect = 6;
+                    //frost->printf(82,177,"Select previous network player");
+                }
             }
         }
 
@@ -2511,6 +2611,14 @@ void assign_menu(void) {
                 config.player_number[menusubselect1] = l2;
                 break;
 
+            case 5: case 6:
+                network_find_next_controls((menuselect == 6),
+                                           clientname[menusubselect1]);
+                clientcolor[menusubselect1] =
+                    network_find_preferred_color(clientname[menusubselect1]);
+                set_roster_from_clientname(menusubselect1,
+                                           clientname[menusubselect1]);
+                break;
             }
         }
 
@@ -2528,7 +2636,27 @@ void assign_menu(void) {
             config.player_type[l] = 0;
             config.player_number[l] = -1;
         }
+        if (network_is_active()) {
+            // check for and remove duplicate network players
+            if (config.player_type[l] == 3 && clientname[l][0] != '\0') {
+                for (l2 = l + 1; l2 < 4; l2++) {
+                    if (config.player_type[l2] == 3 &&
+                        strcmp(clientname[l], clientname[l2]) == 0) {
+                        config.player_type[l2] = 0;
+                        config.player_number[l2] = -1;
+                    }
+                }
+            }
+
+            if (config.player_type[l] == 1 || config.player_type[l] == 3)
+                network_set_allowed_controls(l, clientname[l]);
+            else
+                network_set_allowed_controls(l, "");
+        }
     }
+
+    if (network_is_active())
+        network_reallocate_controls();
 
     delete acesme;
     delete ruksi;
@@ -2979,6 +3107,362 @@ void letter_menu(void) {
     }
 }
 
+void netgame_menu(void) {
+    int help_on = 0;
+    int exit_flag = 0;
+    int i, x, y, n1, n2, menuselect;
+    Bitmap *netmenu, *help, *right;
+    Bitmap *napp[4];
+    Bitmap *controlme;
+    Bitmap *upnapp[4];
+    Bitmap *assignme, *playerselect;
+    char str[100];
+    menu_position positions[] = {
+        { 40, 43, 1 }, { 168, 43, 1 },
+        { 82, 53, 1 }, { 210, 53, 1 },
+        { 40, 73, 1 }, { 168, 73, 1 },
+        { 37, 108, 1 }, { 37+1*18, 108, 1 },
+        { 37+2*18, 108, 1 }, { 37+3*18, 108, 1 },
+        { 114, 130, 0 /* (config.netc_controlplanes != 0) */ },
+        { 122, 130, 0 /* (config.netc_controlplanes != 0) */ },
+        { 40, 153, 1 },
+        { 67, 174, 1 }, { 195, 174, 1 }, { 284, 180, 1 },
+        { 0, 0, -1 } };
+
+    if (config.netc_solo_controls < 0 ||
+        !roster[config.netc_solo_controls].pilotname[0])
+        config.netc_solo_controls = 0;
+
+    netmenu = new Bitmap("NETMEN");
+    help = new Bitmap("HELP4"); // FIXME no help bitmap yet
+    right = new Bitmap("RIGHT");
+    napp[0] = new Bitmap("NAPPRE");
+    napp[1] = new Bitmap("NAPPBL");
+    napp[2] = new Bitmap("NAPPGR");
+    napp[3] = new Bitmap("NAPPYL");
+    controlme = new Bitmap("NAPPIS");
+    upnapp[0] = new Bitmap(11, 23, 12, 11, controlme);
+    upnapp[1] = new Bitmap(38, 23, 12, 11, controlme);
+    upnapp[2] = new Bitmap(11, 46, 12, 11, controlme);
+    upnapp[3] = new Bitmap(38, 46, 12, 11, controlme);
+    assignme = new Bitmap("ASSIGN");
+    playerselect = new Bitmap(42, 79, 111, 11, assignme);
+
+    while (!exit_flag) {
+        menu_keys(&exit_flag, &help_on);
+
+        // can control only 0 or 1 planes
+        for (i = 0; i < 4; i++) {
+            if (config.netc_controlplanes & (1<<i)) {
+                config.netc_controlplanes = 1<<i;
+                break;
+            }
+        }
+
+        positions[10].active = (config.netc_controlplanes != 0);
+        positions[11].active = (config.netc_controlplanes != 0);
+        menu_mouse(&x, &y, &n1, &n2, positions);
+        netmenu->blit(0, 0);
+
+        frost->printf(20+4, 11, "NETWORK GAME CLIENT");
+
+        frost->printf(20, 30, "Address of host:");
+        frost->printf(20+10, 40, "%s", config.netc_host);
+        frost->printf(20, 50, "Port number:");
+        frost->printf(20+55, 50, "%d", config.netc_port);
+        // FIXME hide password?
+        frost->printf(20, 60, "Game password:");
+        frost->printf(20+10, 70, "%s", config.netc_password);
+
+        frost->printf(20, 80, "Which plane would you\n"
+                      "like to control, if any?\n"
+                      "(the host can change it)");
+        for (i = 0; i < 4; i++)
+            if (config.netc_controlplanes & (1<<i))
+                napp[i]->blit(20+12 + i*18 - 1, 103 - 1);
+            else
+                upnapp[i]->blit(20+12 + i*18, 103);
+
+        if (config.netc_controlplanes != 0) {
+            frost->printf(20, 118, "Use solo controls of:");
+            playerselect->blit(16, 125);
+            if (roster[config.netc_solo_controls].pilotname[0])
+                frost->printf(20, 128, "%s",
+                              roster[config.netc_solo_controls].pilotname);
+        }
+
+        frost->printf(20, 140, "Your player name:");
+        frost->printf(20+10, 150, "%s", config.netc_playername);
+
+        // FIXME draw the button in the bitmap?
+        frost->printf(20+5, 170, "[ START THE CLIENT ]");
+
+        frost->printf(148+4, 11, "HOST A NETWORK GAME");
+
+        frost->printf(148, 30, "Listen address:");
+        frost->printf(148+10, 40, "%s", config.neth_listenaddr);
+        frost->printf(148, 50, "Port number:");
+        frost->printf(148+55, 50, "%d", config.neth_listenport);
+        // FIXME hide password?
+        frost->printf(148, 60, "Game password:");
+        frost->printf(148+10, 70, "%s", config.neth_password);
+
+        // FIXME draw the button in the bitmap?
+        if (network_is_active()) {
+            frost->printf(148, 160, "The host is already active");
+            frost->printf(148+5, 170, "[ DEACTIVATE HOST ]");
+        } else {
+            frost->printf(148+3, 170, "[ ACTIVATE THE HOST ]");
+        }
+
+        if (help_on)
+            help->blit(0, 0);
+
+        menuselect = 0;
+
+        if (x >= 267 && x <= 301 && y >= 155 && y <= 190) {
+            menuselect = 1;
+        }
+
+        if (x >= 20 && x <= 115 && y >= 168 && y <= 182) {
+            menuselect = 2;
+        }
+
+        if (x >= 148 && x <= 243 && y >= 168 && y <= 182) {
+            menuselect = 3;
+        }
+
+        if (x >= 20+12 && x < 20+12+4*18 && y >= 103 && y <= 103+15) {
+            menuselect = 10 + (x - 20 - 12) / 18;
+        }
+
+        if (x >= 110 && x <= 125 && y >= 126 && y <= 126+7) {
+            menuselect = 15 + (x >= 118);
+        }
+
+        if (x >= 20+10 && x <= 115 && y >= 35 && y <= 49) {
+            menuselect = 20;
+        }
+
+        if (x >= 20+55 && x <= 115 && y >= 50 && y <= 62) {
+            menuselect = 21;
+        }
+
+        if (x >= 20+10 && x <= 115 && y >= 65 && y <= 79) {
+            menuselect = 22;
+        }
+
+        if (x >= 20+10 && x <= 115 && y >= 145 && y <= 159) {
+            menuselect = 23;
+        }
+
+        if (x >= 148+10 && x <= 243 && y >= 35 && y <= 49) {
+            menuselect = 30;
+        }
+
+        if (x >= 148+55 && x <= 243 && y >= 50 && y <= 62) {
+            menuselect = 31;
+        }
+
+        if (x >= 148+10 && x <= 243 && y >= 65 && y <= 80) {
+            menuselect = 32;
+        }
+
+        cursor->blit(x - 10, y - 10);
+        do_all();
+
+        if (n1 || n2) {
+            switch (menuselect) {
+
+            case 1:             // Exit menu
+                if (n1)
+                    random_fade_out();
+                else {
+                    tyhjaa_vircr();
+                    do_all();
+                }
+                exit_flag = 1;
+                break;
+
+            case 2:             // Start the client
+                // FIXME display a "Connecting" text instead of the fade?
+                if (n1)
+                    random_fade_out();
+                else {
+                    tyhjaa_vircr();
+                    do_all();
+                }
+                if (network_is_active()) {
+                    small_warning("You cannot be both host and client\n"
+                                  "at the same time.\n"
+                                  "\n"
+                                  "Please deactivate the host first.");
+                    break;
+                }
+                if (config.netc_controlplanes != 0 &&
+                    !roster[config.netc_solo_controls].pilotname[0]) {
+                    small_warning("Your roster is empty, but you need a\n"
+                                  "player in the roster to set your keys.\n"
+                                  "\n"
+                                  "Please go to the roster menu and\n"
+                                  "create a player.");
+                    break;
+                }
+
+
+                set_keys_none();
+                if (config.netc_controlplanes == 0) {
+                    netclient_activate_controls(-1, 0);
+                } else {
+                    for (i = 0; i < 4; i++) {
+                        if (config.netc_controlplanes & (1<<i)) {
+                            netclient_activate_controls(i, config.netc_solo_controls);
+                            break;
+                        }
+                    }
+                }
+                netclient_loop(config.netc_host, config.netc_port,
+                               config.netc_playername, config.netc_password);
+                // Return back to netgame menu after client is done
+                init_vga("PALET5");
+                break;
+
+            case 3:             // Activate/deactivate the host
+                if (network_is_active()) {
+                    network_quit();
+                    wait_mouse_relase();
+                } else {
+                    if (n1)
+                        random_fade_out();
+                    else {
+                        tyhjaa_vircr();
+                        do_all();
+                    }
+                    network_activate_host(config.neth_listenaddr,
+                                          config.neth_listenport,
+                                          config.neth_password,
+                                          frost);
+                    // After activating the host, move to the assign
+                    // players menu (to select players) and then back
+                    // to the main menu
+                    exit_flag = 1;
+                    wait_mouse_relase();
+                    assign_menu();
+                }
+                break;
+
+            case 10: case 11: case 12: case 13: // netc_controlplanes
+                if (config.netc_controlplanes == 1 << (menuselect - 10))
+                    config.netc_controlplanes = 0;
+                else
+                    config.netc_controlplanes = 1 << (menuselect - 10);
+                wait_mouse_relase(); // because this is a toggle
+                break;
+
+            case 15:            // Solo controls up arrow
+                config.netc_solo_controls++;
+                if (config.netc_solo_controls >= MAX_PLAYERS_IN_ROSTER ||
+                    !roster[config.netc_solo_controls].pilotname[0]) {
+                    config.netc_solo_controls = 0;
+                }
+                if (roster[config.netc_solo_controls].pilotname[0] &&
+                    check_strict_string(roster[config.netc_solo_controls].pilotname, 21))
+                    strcpy(config.netc_playername,
+                           roster[config.netc_solo_controls].pilotname);
+                wait_mouse_relase(); // so this does not repeat
+                break;
+
+            case 16:            // Solo controls down arrow
+                if (config.netc_solo_controls <= 0) {
+                    for (config.netc_solo_controls = MAX_PLAYERS_IN_ROSTER - 1;
+                         /* finally select 0 if no others are ok */
+                         config.netc_solo_controls > 0;
+                         config.netc_solo_controls--)
+                        if (roster[config.netc_solo_controls].pilotname[0])
+                            break;
+                } else {
+                    config.netc_solo_controls--;
+                }
+                if (roster[config.netc_solo_controls].pilotname[0] &&
+                    check_strict_string(roster[config.netc_solo_controls].pilotname, 21))
+                    strcpy(config.netc_playername,
+                           roster[config.netc_solo_controls].pilotname);
+                wait_mouse_relase(); // so this does not repeat
+                break;
+
+            case 20:            // Address of host (client)
+                netmenu->blit(0, 0, 20+10, 40, 145, 49);
+                frost->scanf(20+10, 40, config.netc_host, 79);
+                break;
+
+            case 21:            // Port number (client)
+                netmenu->blit(0, 0, 20+55, 50, 145, 59);
+                sprintf(str, "%d", config.netc_port);
+                frost->scanf(20+55, 50, str, 15);
+                config.netc_port = atoi(str);
+                if (config.netc_port < 1 || config.netc_port > 65535)
+                    config.netc_port = 9763;
+                break;
+
+            case 22:            // Game password (client)
+                netmenu->blit(0, 0, 20+10, 70, 145, 79);
+                frost->scanf(20+10, 70, config.netc_password, 20);
+                if (config.netc_password[0] == '\0')
+                    strcpy(config.netc_password, "triplane");
+                break;
+
+            case 23:            // Player name (client)
+                netmenu->blit(0, 0, 20+10, 90, 145, 99);
+                frost->scanf(20+10, 150, config.netc_playername, 20);
+                if (config.netc_playername[0] == '\0' ||
+                    !check_strict_string(config.netc_playername, 21))
+                    strcpy(config.netc_playername, "netplayer");
+                break;
+
+            case 30:            // Listen address (host)
+                netmenu->blit(0, 0, 148+10, 40, 255, 49);
+                frost->scanf(148+10, 40, config.neth_listenaddr, 79);
+                if (config.neth_listenaddr[0] == '\0')
+                    strcpy(config.neth_listenaddr, "0.0.0.0");
+                break;
+
+            case 31:            // Listen port (host)
+                netmenu->blit(0, 0, 148+55, 50, 255, 59);
+                sprintf(str, "%d", config.neth_listenport);
+                frost->scanf(148+55, 50, str, 15);
+                config.neth_listenport = atoi(str);
+                if (config.neth_listenport < 1 || config.neth_listenport > 65535)
+                    config.neth_listenport = 9763;
+                break;
+
+            case 32:            // Game password (host)
+                netmenu->blit(0, 0, 148+10, 70, 255, 79);
+                frost->scanf(148+10, 70, config.neth_password, 20);
+                if (config.neth_password[0] == '\0')
+                    strcpy(config.neth_password, "triplane");
+                break;
+
+            default:
+                break;
+            }
+        }
+    }
+
+    for (i = 0; i < 4; i++) {
+        delete upnapp[i];
+        delete napp[i];
+    }
+
+    delete playerselect;
+    delete assignme;
+    delete controlme;
+    delete help;
+    delete right;
+    delete netmenu;
+
+    wait_mouse_relase();
+}
+
 void main_menu(void) {
     int exit_flag = 0;
     int x, y, n1, n2;
@@ -2989,8 +3473,8 @@ void main_menu(void) {
 
     menu_position positions[] = {
         { 51, 40, 1 }, { 103, 40, 1 }, { 156, 40, 1 }, { 214, 40, 1 },
-        { 268, 40, 1 }, { 51, 77, 1 }, { 51, 120, 1 },
-        { 254, 120, 1 }, { 268, 169, 1 }, { 0, 0, -1 } };
+        { 268, 40, 1 }, { 51, 77, 1 }, { 51, 120, 1 }, { 254, 120, 1 },
+        { 51, 164, 1 }, { 268, 169, 1 }, { 0, 0, -1 } };
 
     help = new Bitmap("HELP1");
 
@@ -3008,7 +3492,9 @@ void main_menu(void) {
 
         menu_mouse(&x, &y, &n1, &n2, positions);
         menu1->blit(0, 0);      // 0,0,799,599
-        grid2->printf(34, 156, "Press F1\nfor Help");
+        // FIXME write this in a nicer way in the menu1 bitmap data?
+        // FIXME fix this part of the help bitmap
+        grid2->printf(39, 157, "NETWORK\n GAME");
 
         for (l = 0; l < 4; l++)
             if (config.player_type[l] == 1)
@@ -3051,38 +3537,49 @@ void main_menu(void) {
 
                 }
 
-                for (l = 0; l < 4; l++) {
-                    if (config.player_type[l] == 3) {
-                        frost->printf(110, 130 + l * 11, "%d. %s",
-                                      l + 1,
-                                      (config.player_number[l] == -2)
-                                      ? "Anonymous pilot"
-                                      : roster[config.player_number[l]].pilotname);
+                if (network_is_active()) {
+                    for (l = 0; l < 4; l++) {
+                        if (config.player_type[l] == 3) {
+                            frost->printf(100, 121 + l * 15, "%d. %s",
+                                          l + 1,
+                                          (config.player_number[l] == -2)
+                                          ? "Anonymous pilot"
+                                          : roster[config.player_number[l]].pilotname);
+                            frost->printf(109, 121 + l * 15 + 7,
+                                          "(%s)",
+                                          network_controlling_player_string(l));
+                        } else if (config.player_type[l] == 2) {
+                            frost->printf(100, 121 + l * 15,
+                                          "%d. Computer pilot", l + 1);
+                        } else if (config.player_type[l] == 0) {
+                            frost->printf(100, 121 + l * 15,
+                                          "%d. Not active", l + 1);
+                        }
                     }
-
-                    if (config.player_type[l] == 2) {
-                        frost->printf(110, 130 + l * 11, "%d. Computer pilot", l + 1);
-
+                } else {
+                    for (l = 0; l < 4; l++) {
+                        if (config.player_type[l] == 3) {
+                            frost->printf(110, 130 + l * 11, "%d. %s",
+                                          l + 1,
+                                          (config.player_number[l] == -2)
+                                          ? "Anonymous pilot"
+                                          : roster[config.player_number[l]].pilotname);
+                        } else if (config.player_type[l] == 2) {
+                            frost->printf(110, 130 + l * 11, "%d. Computer pilot", l + 1);
+                        } else if (config.player_type[l] == 0) {
+                            frost->printf(110, 130 + l * 11, "%d. Not active", l + 1);
+                        }
                     }
-
-                    if (config.player_type[l] == 0) {
-                        frost->printf(110, 130 + l * 11, "%d. Not active", l + 1);
-
-
-                    }
-
-
-
                 }
-
             }
-
         } else {
             frost->printf(100, 100, "Sologame active");
             frost->printf(100, 110, "%s selected", plane_name[l]);
 
             frost->printf(110, 130, "%s flying", roster[config.player_number[l]].pilotname);
-
+            if (network_is_active())
+                frost->printf(110, 140, "(%s)",
+                              network_controlling_player_string(l));
         }
 
         if (help_on)
@@ -3132,6 +3629,15 @@ void main_menu(void) {
         if (x >= 242 && x <= 295 && y >= 27 && y <= 53) {
             frost->printf(247, 32, "Credits");
             menuselect = 9;
+        }
+
+        if (x >= 30 && x <= 73 && y >= 147 && y <= 182) {
+            frost->printf(245, 32, "Start/join a\nnetwork game");
+            menuselect = 10;
+        }
+
+        if (menuselect == 0) {
+            frost->printf(247, 32, "Press F1\n for Help");
         }
 
         cursor->blit(x - 10, y - 10);
@@ -3351,6 +3857,13 @@ void main_menu(void) {
 
                 break;
 
+            case 10:
+                if (n1)
+                    random_fade_out();
+                wait_mouse_relase();
+                netgame_menu();
+
+                break;
 
             }
         }

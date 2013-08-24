@@ -21,6 +21,7 @@
 #include <assert.h>
 #include "gfx/fades.h"
 #include "gfx/gfx.h"
+#include "io/network.h"
 #include "util/wutil.h"
 
 static void horisontal_split(void) {
@@ -133,15 +134,17 @@ static void partial_fade(void) {
     do_all();
 }
 
-void random_fade_out(void) {
-    int t;
+void selected_fade_out(int t) {
+    int display_was_enabled;
 
-    t = wrandom(5);
+    netsend_fade_out(t);
 
     if (current_mode == SVGA_MODE) {
         do_all_clear();
         return;
     }
+
+    display_was_enabled = network_display_enable(0);
 
     switch (t) {
     case 0:
@@ -165,6 +168,12 @@ void random_fade_out(void) {
         break;
     }
 
+    network_display_enable(display_was_enabled);
+}
 
+void random_fade_out(void) {
+    int t;
 
+    t = wrandom(5);
+    selected_fade_out(t);
 }

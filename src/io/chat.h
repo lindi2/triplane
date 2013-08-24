@@ -18,34 +18,15 @@
  * tjt@users.sourceforge.net
  */
 
-#ifndef WUTIL_H
-#define WUTIL_H
+#ifndef CHAT_H
+#define CHAT_H
 
-#include <stdlib.h>
+#include "gfx/font.h"
 
-void setwrandom(int seed);
-int wrandom(int limit);
-void wrandom_sanity_check(void);
-
-void *walloc(size_t size);
-void wfree(void *);
-
-void wtoggle(int *);
-
-void init_trigs(void);
-int arcsinit(int luku);
-void calculate_difference(int x1, int y1, int x2, int y2, int *distance, int *angle = NULL);
-int squareroot(int number);
-
-extern int cosinit[361];
-extern int sinit[361];
-
-void findparameter_init(int argc, char **argv);
-int findparameter(const char *jono);
-const char *findparameter_arg(const char *jono);
-
-int printable_char(int ch);
-int check_strict_string(const char *s, int len);
-int check_printable_string(const char *s, int len);
+void chat_overlay_init(Font *font);
+void chat_set_sender(void (*new_sender)(const char *));
+void chat_draw_overlay(void);
+int chat_input_key(int keysym);
+int chat_overlay_is_on(void);
 
 #endif

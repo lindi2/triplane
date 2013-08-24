@@ -40,6 +40,7 @@ void options_menu(void);
 void controls_menu(void);
 int kangas_menu(void);
 int solo_player_menu(void);
+void netgame_menu(void);
 
 void print_clear_roster(Bitmap * rosteri);
 void print_filled_roster(int number);
