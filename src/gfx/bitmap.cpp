@@ -321,6 +321,9 @@ void Bitmap::blit(int xx, int yy, int rx, int ry, int rx2, int ry2) {
     if ((ry > ry2) || (rx > rx2))
         return;
 
+    if (xx + width <= rx || xx > rx2 || yy + height <= ry || yy > ry2)
+        return;             /* no part is inside the clip rectangle */
+
     if (update_vircr_mode) {
         fromminy = (yy >= ry) ? 0 : ry - yy;
         fromminx = (xx >= rx) ? 0 : rx - xx;
