@@ -23,9 +23,11 @@
 #include "menus/menusupport.h"
 #include "io/sdl_compat.h"
 #include "io/mouse.h"
+#include <stdlib.h>
 #include <SDL.h>
 
 static int menu_mousetab = 0, menu_n1 = 0, menu_n2 = 0;
+static int menu_mousedx = 0, menu_mousedy = 0;
 
 void menu_keys(int *exit_flag, int *help_flag) {
     int ch;
@@ -44,6 +46,14 @@ void menu_keys(int *exit_flag, int *help_flag) {
             menu_n2 = 1;
         } else if (ch == SDLK_TAB) {
             menu_mousetab++;
+        } else if (ch == SDLK_LEFT) {
+            menu_mousedx = -1;
+        } else if (ch == SDLK_RIGHT) {
+            menu_mousedx = 1;
+        } else if (ch == SDLK_UP) {
+            menu_mousedy = -1;
+        } else if (ch == SDLK_DOWN) {
+            menu_mousedy = 1;
         }
     }
 }
@@ -54,12 +64,62 @@ void menu_keys(int *exit_flag, int *help_flag) {
  */
 void menu_mouse(int *x, int *y, int *n1, int *n2,
                const menu_position *positions) {
-    const menu_position *p;
+    const menu_position *p, *bestp;
+    int dist, bestdist;
 
     koords(x, y, n1, n2);
 
-    if (positions == NULL)
+    if (positions == NULL) {
         menu_mousetab = 0;
+        menu_mousedx = menu_mousedy = 0;
+    }
+
+    if (menu_mousedx != 0 || menu_mousedy != 0) {
+        /*
+         * We select the nearest active position that is at most 45
+         * degrees off from the requested direction
+         */
+        bestp = NULL;
+        bestdist = -1;
+        for (p = positions; p->active >= 0; p++) {
+            if (p->active == 0)
+                continue;
+            if (p->x == *x && p->y == *y)
+                continue;
+
+            if (menu_mousedx == 0) {
+                if (abs(p->x - *x) > abs(p->y - *y))
+                    continue;
+            } else {
+                if (menu_mousedx * (p->x - *x) < 0)
+                    continue;
+            }
+
+            if (menu_mousedy == 0) {
+                if (abs(p->y - *y) > abs(p->x - *x))
+                    continue;
+            } else {
+                if (menu_mousedy * (p->y - *y) < 0)
+                    continue;
+            }
+
+            dist = ((p->y - *y) * (p->y - *y)) +
+                ((p->x - *x) * (p->x - *x));
+            if (bestp == NULL || dist < bestdist) {
+                bestp = p;
+                bestdist = dist;
+            }
+        }
+
+        if (bestp != NULL) {
+            *x = bestp->x;
+            *y = bestp->y;
+            hiiri_to(*x, *y);
+        }
+
+        menu_mousedx = menu_mousedy = 0;
+    }
+
     if (menu_mousetab > 0) {
         for (p = positions; p->active >= 0; p++) {
             if (p->active == 0 ||
