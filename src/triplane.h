@@ -167,8 +167,6 @@ extern int player_on_airfield[16];
 extern int collision_detect;
 extern int part_collision_detect;
 extern int end_game_after;
-extern int power_reverse;
-extern int power_on_off;
 extern int loading_texts;
 extern int solo_mode;
 extern int aftermath;
@@ -322,6 +320,13 @@ extern void do_aftermath(int show_it_all);
 extern void clear_level(void);
 extern void init_player(int l, int pommit = 1);
 void set_player_types(void);
+
+void set_keys_none(void);
+void set_keys_from_multiplayer(int country);
+void set_keys_from_roster(int country, int player_num);
+void get_controls_for_player(int player,
+                             int *down, int *up, int *power,
+                             int *roll, int *guns, int *bombs);
 
 extern void cause_damage(int amount, int plane);
 extern void do_flags(void);
