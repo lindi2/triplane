@@ -120,11 +120,6 @@ extern Font *fontti;
 extern Font *frost;
 extern Font *grid2;
 
-//\ Parameter control
-
-extern char parametrit[40][40];
-extern int parametri_kpl;
-
 //\ Shots control
 
 extern int pohja;
@@ -321,7 +316,6 @@ extern int main_engine_random_seed;
 /***************************** Functions **************************************/
 
 extern int small_warning(const char *message);
-extern int findparameter(const char *jono);
 extern void kangas_terrain_to_screen(int leftx);
 extern void main_engine(void);
 extern void do_aftermath(int show_it_all);

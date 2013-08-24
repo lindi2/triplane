@@ -595,7 +595,7 @@ int solo_player_menu(void) {
     int highest_mission = 0;
 
     if (findparameter("-solomenumission")) {
-        sscanf(parametrit[findparameter("-solomenumission") + 1], "%d", &mission_re_fly);
+        sscanf(findparameter_arg("-solomenumission"), "%d", &mission_re_fly);
     }
 
     if (mission_re_fly == 999) {

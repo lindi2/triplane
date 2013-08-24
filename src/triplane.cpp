@@ -144,11 +144,6 @@ Font *fontti;
 Font *frost;
 Font *grid2;
 
-//\ Parameter control
-
-char parametrit[40][40];
-int parametri_kpl;
-
 //\ Shots control
 
 int pohja = 0;
@@ -362,7 +357,6 @@ extern char mission_names[24][30];
 //\\\\ Prototypes
 
 void hangarmenu_handle(void);
-int findparameter(const char *jono);
 void controls(void);
 void detect_collision(void);
 void main_engine(void);
@@ -902,17 +896,6 @@ void init_player(int l, int pommit) {
 
     }
 }
-
-int findparameter(const char *jono) {
-    int laskuri;
-
-    for (laskuri = 1; laskuri < parametri_kpl; laskuri++)
-        if (!strncmp(parametrit[laskuri], jono, strlen(jono)))
-            return (laskuri);
-
-    return (0);
-}
-
 
 
 void controls(void) {
@@ -3041,7 +3024,7 @@ void load_level(void) {
 
     loading_text("Loading levelinfo.");
 
-    if (!findparameter("-level")) {
+    if (findparameter_arg("-level") == NULL) {
         if (!playing_solo) {
             sprintf(levelname, "level%d", config.current_multilevel + 1);
         } else {
@@ -3049,8 +3032,8 @@ void load_level(void) {
 
         }
     } else {
-        sprintf(levelname, parametrit[findparameter("-level")] + 6);
-
+        strncpy(levelname, findparameter_arg("-level"), 80);
+        levelname[79] = '\0';
     }
 
 
@@ -3593,11 +3576,7 @@ int main(int argc, char *argv[]) {
     FILE *faili;
     Bitmap *lakuva1;
 
-    for (laskuri = 0; laskuri < argc; laskuri++)
-        strcpy(parametrit[laskuri], argv[laskuri]);
-
-    parametri_kpl = argc;
-
+    findparameter_init(argc, argv);
 
     if (findparameter("-?") || findparameter("-h") || findparameter("--help") || findparameter("-help")) {
         printf("Triplane Classic " TRIPLANE_VERSION " - a side-scrolling dogfighting game.\n");

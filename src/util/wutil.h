@@ -40,4 +40,8 @@ int squareroot(int number);
 extern int cosinit[361];
 extern int sinit[361];
 
+void findparameter_init(int argc, char **argv);
+int findparameter(const char *jono);
+const char *findparameter_arg(const char *jono);
+
 #endif
