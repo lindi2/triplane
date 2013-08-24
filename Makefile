@@ -83,7 +83,6 @@ install:
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man6
 	$(INSTALL_DATA) doc/triplane.6 $(DESTDIR)$(PREFIX)/share/man/man6/triplane.6
 test:
-	if [ ! -d triplane-testsuite ]; then echo Please darcs get http://iki.fi/lindi/darcs/triplane-testsuite; false; fi
 	SDL_VIDEODRIVER=dummy bash tools/run-all-tests tools/run-one-test ./triplane triplane-testsuite
 
 build-data-from-source: tools/pcx2pgd
@@ -98,5 +97,5 @@ dist:
 
 # man -Tps doc/triplane.6 > triplane.ps
 # ps2pdf triplane.ps
-.PHONY: all checkdepend depend clean install test
+.PHONY: all checkdepend depend clean install test build-data-from-source dist
 -include .depend
