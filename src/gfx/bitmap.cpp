@@ -41,39 +41,43 @@
 
 #define MAX_BITMAPS 8192
 Bitmap *all_bitmaps[MAX_BITMAPS];
-int all_bitmaps_n = 0;
+int all_bitmaps_last_alloc = -1;
 
 unsigned char *pointti;
 
-static void all_bitmaps_add(Bitmap * b) {
-    if (draw_with_vircr_mode)
-        return;
+static int all_bitmaps_add(Bitmap * b) {
+    int wrapped = 0;
 
-    assert(all_bitmaps_n < MAX_BITMAPS);
-    all_bitmaps[all_bitmaps_n++] = b;
+    if (all_bitmaps_last_alloc == -1) {
+        memset(all_bitmaps, 0, MAX_BITMAPS * sizeof(Bitmap *));
+    }
+
+    do {
+        all_bitmaps_last_alloc++;
+        if (all_bitmaps_last_alloc >= MAX_BITMAPS) {
+            all_bitmaps_last_alloc = 0;
+            wrapped++;
+            assert(wrapped <= 1); /* else all bitmap positions are used */
+        }
+    } while (all_bitmaps[all_bitmaps_last_alloc] != NULL);
+
+    all_bitmaps[all_bitmaps_last_alloc] = b;
+    return all_bitmaps_last_alloc;
 }
 
-static void all_bitmaps_delete(Bitmap * b) {
-    int i;
-
-    if (draw_with_vircr_mode)
-        return;
-
-    for (i = 0; i < all_bitmaps_n; i++)
-        if (all_bitmaps[i] == b)
-            break;
-    if (i < all_bitmaps_n)
-        all_bitmaps[i] = all_bitmaps[--all_bitmaps_n];
+static void all_bitmaps_delete(int id) {
+    all_bitmaps[id] = NULL;
 }
 
 void all_bitmaps_refresh(void) {
     int i;
 
-    if (draw_with_vircr_mode)
-        return;
-
-    for (i = 0; i < all_bitmaps_n; i++)
-        all_bitmaps[i]->refresh_sdlsurface();
+    for (i = 0; i < MAX_BITMAPS; i++) {
+        if (all_bitmaps[i] == NULL)
+            continue;
+        if (!draw_with_vircr_mode)
+            all_bitmaps[i]->refresh_sdlsurface();
+    }
 }
 
 /* Make a copy of the image data in source, enlarged zoom times */
@@ -242,8 +246,8 @@ Bitmap::Bitmap(const char *image_name, int transparent) {
     name = image_name;
     hastransparency = transparent;
     sdlsurface = NULL;
+    id = all_bitmaps_add(this);
     refresh_sdlsurface();
-    all_bitmaps_add(this);
 }
 
 
@@ -255,13 +259,13 @@ Bitmap::Bitmap(int width, int height, unsigned char *image_data, const char *nam
     this->name = name;
     this->hastransparency = 1;
     this->sdlsurface = NULL;
+    this->id = all_bitmaps_add(this);
     refresh_sdlsurface();
-    all_bitmaps_add(this);
 }
 
 
 Bitmap::~Bitmap() {
-    all_bitmaps_delete(this);
+    all_bitmaps_delete(id);
     if (sdlsurface != NULL) {
         SDL_FreeSurface(sdlsurface);
         sdlsurface = NULL;
@@ -394,8 +398,8 @@ Bitmap::Bitmap(int x1, int y1, int xl, int yl, Bitmap * source_image) {
     name = source_image->name;
     hastransparency = source_image->hastransparency;
     sdlsurface = NULL;
+    id = all_bitmaps_add(this);
     refresh_sdlsurface();
-    all_bitmaps_add(this);
 }
 
 /* Create a new Bitmap from the contents of vircr at (x,y) to (x+w,y+h) */
@@ -416,8 +420,8 @@ Bitmap::Bitmap(int x, int y, int w, int h) {
     name = "from_vircr";
     hastransparency = 0;
     sdlsurface = NULL;
+    id = all_bitmaps_add(this);
     refresh_sdlsurface();
-    all_bitmaps_add(this);
 }
 
 void Bitmap::blit_to_bitmap(Bitmap * to, int xx, int yy) {

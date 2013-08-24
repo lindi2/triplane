@@ -31,6 +31,7 @@ class Bitmap {
     int16_t width, height;
     int external_image_data;    // boolean: is image_data owned by this instance
     int hastransparency;
+    int id;                     // a unique ID for this Bitmap
     SDL_Surface *sdlsurface;
 
   public:
