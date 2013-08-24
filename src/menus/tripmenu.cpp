@@ -48,8 +48,6 @@ int aces_score[MAX_PLAYERS_IN_ROSTER];
 #define CHARS_PER_LINE 70
 #define LINELENGHT 100
 
-sb_mod_file *national_mod = NULL;
-
 char rank_names[6][10] = {
     "2nd Lt.",
     "1st Lt.",
@@ -582,7 +580,6 @@ void load_descriptions(int number) {
 int solo_player_menu(void) {
     char facenames[4][7] = { "GERFAC", "FINFAC", "ENGFAC", "JAPFAC" };
     char missionnames[4][7] = { "MISSI0", "MISSI1", "MISSI2", "MISSI3" };
-    char modnames[4][7] = { "mgerma", "mfinla", "mengla", "mjapan" };
 
     Bitmap *misboa = 0;
     Bitmap *misbak = 0;
@@ -631,15 +628,7 @@ int solo_player_menu(void) {
 
     if ((mission_re_fly == -1) && is_there_sound && config.music_on && !findparameter("-nomusic")) {
         sdl_stop_music();
-        national_mod = sdl_load_mod_file(modnames[solo_country]);
-        if (national_mod == NULL) {
-            printf("Error locating music.\n");
-            exit(1);
-
-        }
-
-        sdl_play_music(national_mod);
-
+        sdl_play_music(national_mod[solo_country]);
     }
 
     while (flag == 0) {
@@ -703,16 +692,12 @@ int solo_player_menu(void) {
     case 3:
         if ((mission_re_fly == -1) && is_there_sound && config.music_on && !findparameter("-nomusic")) {
             sdl_stop_music();
-            sdl_free_mod_file(national_mod);
-
         }
         return 2;
 
     case 2:
         if (is_there_sound && config.music_on && !findparameter("-nomusic")) {
             sdl_stop_music();
-            sdl_free_mod_file(national_mod);
-
         }
 
         return 0;
@@ -2877,7 +2862,6 @@ int kangas_menu(void) {
 
     if ((mission_re_fly == -1) && is_there_sound && config.music_on && !findparameter("-nomusic")) {
         sdl_stop_music();
-        sdl_free_mod_file(national_mod);
     }
 
 
@@ -2965,7 +2949,6 @@ void letter_menu(void) {
     int exit_flag = 0;
     int x, y, n1, n2;
     char country_names[4][10] = { "German", "Finnish", "English", "Japanese" };
-    char modnames[4][7] = { "mgerma", "mfinla", "mengla", "mjapan" };
 
     Bitmap *letter;
     Bitmap *temp;
@@ -2976,14 +2959,7 @@ void letter_menu(void) {
     delete temp;
 
     if (is_there_sound && config.music_on && !findparameter("-nomusic")) {
-        national_mod = sdl_load_mod_file(modnames[solo_country]);
-        if (national_mod == NULL) {
-            printf("Error locating music.\n");
-            exit(1);
-
-        }
-        sdl_play_music(national_mod);
-
+        sdl_play_music(national_mod[solo_country]);
     }
 
 
@@ -3031,7 +3007,6 @@ void letter_menu(void) {
 
     if (is_there_sound && config.music_on && !findparameter("-nomusic")) {
         sdl_stop_music();
-        sdl_free_mod_file(national_mod);
     }
 }
 
