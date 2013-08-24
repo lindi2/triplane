@@ -321,6 +321,8 @@ extern void main_engine(void);
 extern void do_aftermath(int show_it_all);
 extern void clear_level(void);
 extern void init_player(int l, int pommit = 1);
+void set_player_types(void);
+
 extern void cause_damage(int amount, int plane);
 extern void do_flags(void);
 

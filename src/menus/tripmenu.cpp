@@ -3250,10 +3250,6 @@ void main_menu(void) {
 
                 init_vga("PALET5");
 
-                for (l = 0; l < 16; l++) {
-                    player_exists[l] = 0;
-                    plane_present[l] = 0;
-                }
                 for (l = 0; l < 4; l++) {
                     if (config.player_type[l] == 1 || config.player_type[l] == 3) {
                         if (config.player_number[l] != -1) {
@@ -3268,48 +3264,7 @@ void main_menu(void) {
                     break;
                 }
 
-                playing_solo = 0;
-                solo_mode = -1;
-
-                for (l = 0; l < 4; l++) {
-                    switch (config.player_type[l]) {
-                    case 0:
-                        player_exists[l] = 0;
-                        break;
-
-                    case 1:
-                        player_exists[l] = 1;
-                        computer_active[l] = 0;
-                        playing_solo = 1;
-                        solo_country = l;
-                        solo_mode = l;
-                        break;
-
-                    case 2:
-                        if ((l == 1 || l == 2) && config.current_multilevel == 5) {
-                            player_exists[l] = 0;
-                            computer_active[l] = 0;
-                            config.player_type[l] = 0;
-
-                        } else {
-                            player_exists[l] = 1;
-                            computer_active[l] = 1;
-                        }
-                        break;
-
-                    case 3:
-                        player_exists[l] = 1;
-                        computer_active[l] = 0;
-                        break;
-
-
-                    }
-
-                }
-
-
-
-
+                set_player_types();
 
                 if (is_there_sound && (!findparameter("-nomusic"))) {
 
