@@ -1942,8 +1942,6 @@ void do_aftermath(int show_it_all) {
 
             fontti->printf(254, 80 + l * 21, "%4d%%", (player_hits[l] * 1000) / (firedi));
         }
-
-        do_all();
     }
 
     if (playing_solo) {
@@ -2156,9 +2154,6 @@ void do_aftermath(int show_it_all) {
             grid2->printf(35, 160, "Mission failed. Total score: 0.");
 
         }
-
-        do_all();
-
 
         if (tempt < 0)
             tempt = 0;
