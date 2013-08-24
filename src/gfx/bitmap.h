@@ -36,7 +36,11 @@ class Bitmap {
 
   public:
       Bitmap(const char *image_name, int transparent = 1);
-      Bitmap(int xl, int yl, unsigned char *image_data, const char *name = "unknown");
+      Bitmap(int xl, int yl,
+             unsigned char *image_data,
+             const char *name = "unknown",
+             int hastransparency = 1,
+             int copy_image_data = 0);
       Bitmap(int x1, int y1, int xl, int yl, Bitmap * source_image);
       Bitmap(int x, int y, int w, int h);
      ~Bitmap();

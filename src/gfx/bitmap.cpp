@@ -251,14 +251,26 @@ Bitmap::Bitmap(const char *image_name, int transparent) {
 }
 
 
-Bitmap::Bitmap(int width, int height, unsigned char *image_data, const char *name) {
-    this->image_data = image_data;
+Bitmap::Bitmap(int width, int height,
+               unsigned char *image_data,
+               const char *name,
+               int hastransparency,
+               int copy_image_data) {
     this->width = width;
     this->height = height;
-    this->external_image_data = 1;
     this->name = name;
-    this->hastransparency = 1;
+    this->hastransparency = hastransparency;
     this->sdlsurface = NULL;
+
+    if (copy_image_data) {
+        this->image_data = (unsigned char *) walloc(width * height);
+        this->external_image_data = 0;
+        memcpy(this->image_data, image_data, width * height);
+    } else {
+        this->image_data = image_data;
+        this->external_image_data = 1;
+    }
+
     this->id = all_bitmaps_add(this);
     refresh_sdlsurface();
 }
