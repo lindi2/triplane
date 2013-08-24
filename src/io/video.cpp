@@ -71,6 +71,9 @@ void setpal_range(const char pal[][3], int firstcolor, int n, int reverse) {
     }
     memcpy(&curpal[firstcolor], cc, n * sizeof(SDL_Color));
     wfree(cc);
+
+    if (n != 8)             // FIXME hack to ignore rotate_water_palet
+        all_bitmaps_refresh();
 }
 
 static Uint32 getcolor(unsigned char c) {
@@ -232,7 +235,6 @@ static int init_mode(int new_mode, const char *paletname) {
     dksclose();
 
     setpal_range(ruutu.paletti, 0, 256);
-    all_bitmaps_refresh();
 
     current_mode = new_mode;
     return 1;
