@@ -86,6 +86,17 @@ static Uint32 getcolor(unsigned char c) {
 void fillrect(int x, int y, int w, int h, int c) {
     SDL_Rect r;
 
+    if (update_vircr_mode) {
+        int screenw = (current_mode == VGA_MODE) ? 320 : 800;
+        if (w == 1 && h == 1) {
+            vircr[x + y * screenw] = c;
+        } else {
+            int i;
+            for (i = 0; i < h; i++)
+                memset(&vircr[x + (y + i) * screenw], c, w);
+        }
+    }
+
     if (draw_with_vircr_mode)
         return;
 
