@@ -2337,6 +2337,9 @@ void assign_menu(void) {
     int plane_colors[4] = { 32, 144, 96, 71 };
     char clientname[4][21] = { "", "", "", "" };
     int clientcolor[4] = { -1, -1, -1, -1 };
+    char tmpname[21] = "";
+    char unallocated[200] = "";
+    bool autoallocate[4] = { true, true, true, true };
     menu_position positions[] = {
         /* those with active=0 are for network_is_active() */
         { 100, 15, 1 },
@@ -2399,6 +2402,58 @@ void assign_menu(void) {
     }
 
     while (!exit_flag) {
+        if (network_is_active()) {
+            // try to auto-allocate controls
+            unallocated[0] = '\0';
+            tmpname[0] = '\0';
+            for (;;) {
+                network_find_next_controls(0, tmpname);
+                if (tmpname[0] == '\0')
+                    break;      // no more players wanting controls
+                for (l = 0; l < 4; l++)
+                    if (strcmp(clientname[l], tmpname) == 0)
+                        break;
+                if (l != 4)     // tmpname already controls something
+                    continue;
+                l = network_find_preferred_color(tmpname);
+                if (l == -1)
+                    continue;   // doesn't want controls (shouldn't happen)
+                if (!autoallocate[l])
+                    goto notallocated;
+                if (clientname[l][0] != '\0')
+                    goto notallocated; // l is already network-controlled
+                // handle a solo player, if any
+                for (l2 = 0; l2 < 4; l2++) {
+                    if (config.player_type[l2] == 1) {
+                        if (l2 != l) {
+                            if (!autoallocate[l2] || clientname[l2][0] != '\0')
+                                // we should not change current solo player
+                                goto notallocated;
+                            config.player_type[l2] = 0;
+                            config.player_number[l2] = -1;
+                        }
+                        // auto-allocate tmpname for solo country l
+                        config.player_type[l] = 1;
+                        goto allocate;
+                    }
+                }
+                // we are not in solo mode
+                // auto-allocate tmpname for country l
+                config.player_type[l] = 3;
+            allocate:
+                strcpy(clientname[l], tmpname);
+                clientcolor[l] = l;
+                set_roster_from_clientname(l, clientname[l]);
+                continue;
+            notallocated:
+                l2 = strlen(unallocated);
+                snprintf(&unallocated[l2], 200-l2, "%s%s (%c)",
+                         l2==0 ? "" : ", ", tmpname,
+                         // FIXME add colored boxes to font to make this look nice?
+                         "GFEJ"[l]);
+            }
+        }
+
         menu_keys(&exit_flag, &help_on);
 
         menu_mouse(&x, &y, &n1, &n2, positions);
@@ -2479,6 +2534,11 @@ void assign_menu(void) {
                     //frost->printf(82,177,"Select previous network player");
                 }
             }
+
+            if (unallocated[0] != '\0') {
+                frost->printf(30, 175, "Network players wanting controls:");
+                frost->printf(45, 185, "%s", unallocated);
+            }
         }
 
         cursor->blit(x - 10, y - 10);
@@ -2487,6 +2547,11 @@ void assign_menu(void) {
         do_all();
 
         if ((n1 || n2) && menuselect) {
+            // disable automatic network player allocation for a
+            // country that has been touched manually
+            if (menuselect != 2 && menusubselect1 >= 0 && menusubselect1 < 4)
+                autoallocate[menusubselect1] = false;
+
             switch (menuselect) {
 
             case 1:
