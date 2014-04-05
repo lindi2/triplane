@@ -2549,7 +2549,14 @@ void assign_menu(void) {
                     }
                 }
 
-
+                if (network_is_active()) {
+                    for (l = 0; l < 4; l++) {
+                        if (config.player_type[l] == 0 || config.player_type[l] == 2) {
+                            clientname[l][0] = '\0';
+                            clientcolor[l] = -1;
+                        }
+                    }
+                }
 
                 break;
 
@@ -3412,7 +3419,7 @@ void netgame_menu(void) {
                 break;
 
             case 23:            // Player name (client)
-                netmenu->blit(0, 0, 20+10, 90, 145, 99);
+                netmenu->blit(0, 0, 20+10, 150, 145, 159);
                 frost->scanf(20+10, 150, config.netc_playername, 20);
                 if (config.netc_playername[0] == '\0' ||
                     !check_strict_string(config.netc_playername, 21))
