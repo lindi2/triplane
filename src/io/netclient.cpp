@@ -811,6 +811,6 @@ void netclient_loop(const char *host, int port,
     netcbitmap_free_all();
 
     if (!client_exit) {
-        small_warning(netc_printed_text("Network game client:\n"));
+        big_warning(netc_printed_text("Network game client:\n"));
     }
 }
