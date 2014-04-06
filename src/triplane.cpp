@@ -612,6 +612,8 @@ int small_warning(const char *message) {
 
     warnkuva = new Bitmap("WARN2");
 
+    wait_mouse_relase();       // ensure that exiting requires a click
+
     while (flag) {
         menu_keys(&exit_flag, NULL);
         menu_mouse(&x, &y, &n1, &n2, positions);
