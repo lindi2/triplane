@@ -3424,6 +3424,14 @@ void netgame_menu(void) {
                 break;
 
             case 10: case 11: case 12: case 13: // netc_controlplanes
+                if (config.netc_controlplanes == 0 &&
+                    strcmp(config.netc_playername, "netplayer") == 0 &&
+                    roster[config.netc_solo_controls].pilotname[0] &&
+                    check_strict_string(roster[config.netc_solo_controls].pilotname, 21))
+                    // Solo controls part becomes visible probably for
+                    // the first time
+                    strcpy(config.netc_playername,
+                           roster[config.netc_solo_controls].pilotname);
                 if (config.netc_controlplanes == 1 << (menuselect - 10))
                     config.netc_controlplanes = 0;
                 else
