@@ -604,6 +604,53 @@ void init_sologame(void) {
     init_mission(solo_country, solo_mission);
 }
 
+int big_warning(const char *message) {
+    Bitmap *warnkuva;
+    int flag = 1, exit_flag = 0;
+    int x, y, n1, n2;
+    int response = 0;
+    menu_position positions[] = {
+      { 61, 167, 1 }, { 259, 167, 1 }, { 0, 0, -1 } };
+
+    warnkuva = new Bitmap("WARN1");
+
+    wait_mouse_relase();       // ensure that exiting requires a click
+
+    while (flag) {
+        menu_keys(&exit_flag, NULL);
+        menu_mouse(&x, &y, &n1, &n2, positions);
+
+        if (exit_flag) {
+            flag = 0;
+            response = 0;
+        }
+
+        tyhjaa_vircr();
+        warnkuva->blit(37, 19);
+        frost->printf(41, 37, message);
+        cursor->blit(x - 10, y - 10);
+
+        do_all();
+
+        if (n1 || n2) {
+            if (x >= 42 && x <= 81 && y >= 158 && y <= 177) {
+                flag = 0;
+                response = 1;
+            }
+
+            if (x >= 240 && x <= 279 && y >= 158 && y <= 177) {
+                flag = 0;
+                response = 0;
+            }
+        }
+    }
+
+    wait_mouse_relase();
+
+    delete warnkuva;
+
+    return response;
+}
 
 int small_warning(const char *message) {
     Bitmap *warnkuva;

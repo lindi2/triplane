@@ -313,6 +313,7 @@ extern int main_engine_random_seed;
 
 /***************************** Functions **************************************/
 
+extern int big_warning(const char *message);
 extern int small_warning(const char *message);
 extern void kangas_terrain_to_screen(int leftx);
 extern void main_engine(void);
