@@ -102,7 +102,8 @@ static void netc_print_texts(void) {
     int i;
     uint32_t oldesttime;
 
-    foverlay->printf(x, y, "Network game client");
+    if (netc_game_mode == 0)
+        foverlay->printf(x, y, "Viewing screen from host");
     y += linesep;
 
     // don't display info older than 10 seconds
