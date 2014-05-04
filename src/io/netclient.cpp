@@ -42,6 +42,8 @@
 #include <stdint.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netinet/in.h>
@@ -599,6 +601,9 @@ static void netc_uncompress_and_receive(void) {
 static int netc_connect(const char *host, int port) {
     struct sockaddr_in sin;
     struct hostent *he;
+    int flags;
+    fd_set writefds;
+    struct timeval timeout;
 
     netc_sendbufend = 0;
     netc_recvubufend = 0;
@@ -618,21 +623,72 @@ static int netc_connect(const char *host, int port) {
         exit(1);
     }
 
+    flags = fcntl(netc_socket, F_GETFL);
+    flags |= O_NONBLOCK;
+    if (fcntl(netc_socket, F_SETFL, flags) < 0) {
+        perror("fcntl");
+        exit(1);
+    }
+
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
     sin.sin_addr = *(struct in_addr *)he->h_addr;
 
     if (connect(netc_socket,
                 (struct sockaddr *)&sin,
-                sizeof(struct sockaddr_in)) < 0) {
+                sizeof(struct sockaddr_in)) == 0)
+        goto connect_ok;
+    if (errno != EINPROGRESS) {
         netc_printf("connect: %s", strerror(errno));
-        close(netc_socket);
-        netc_socket = -1;
-        return 0;
+        goto connect_error;
     }
 
+    for (;;) {
+        FD_ZERO(&writefds);
+        FD_SET(netc_socket, &writefds);
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 40000; // 1/25 seconds (less than a frame)
+
+        if (select(netc_socket + 1, NULL, &writefds, NULL, &timeout) < 0) {
+            perror("select");
+            exit(1);
+        }
+
+        if (FD_ISSET(netc_socket, &writefds)) {
+            int val;
+            socklen_t len = sizeof(int);
+            if (getsockopt(netc_socket, SOL_SOCKET, SO_ERROR,
+                           &val, &len) < 0) {
+                perror("getsockopt");
+                exit(1);
+            }
+            if (val == 0)
+                goto connect_ok;
+            else if (val == EINPROGRESS)
+                continue;
+            else {
+                netc_printf("connect: %s", strerror(val));
+                goto connect_error;
+            }
+        }
+
+        netc_endframe();
+        update_key_state();
+        if (key && key[SDL_SCANCODE_ESCAPE]) {
+            netc_printf("Aborted");
+            wait_relase();
+            goto connect_error;
+        }
+    }
+
+ connect_ok:
     netc_printf("Connected to server");
     return 1;
+
+ connect_error:
+    close(netc_socket);
+    netc_socket = -1;
+    return 0;
 }
 
 static void netc_doselect(void) {

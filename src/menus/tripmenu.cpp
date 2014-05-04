@@ -3357,13 +3357,9 @@ void netgame_menu(void) {
                 break;
 
             case 2:             // Start the client
-                // FIXME display a "Connecting" text instead of the fade?
-                if (n1)
-                    random_fade_out();
-                else {
-                    tyhjaa_vircr();
-                    do_all();
-                }
+                netmenu->blit(0, 0, 20+5, 170, 145, 179);
+                frost->printf(20+5, 170, "Connecting... (Esc to abort)");
+                do_all();
                 if (network_is_active()) {
                     small_warning("You cannot be both host and client\n"
                                   "at the same time.\n"
