@@ -147,6 +147,7 @@ int struct_heigth[MAX_STRUCTURES];
 Font *fontti;
 Font *frost;
 Font *grid2;
+Font *foverlay;
 
 //\ Shots control
 
@@ -2483,6 +2484,8 @@ void load_up(void) {
         fontti = new Font("FONTT");
         grid2 = new Font("G2FONT");
         grid2->scale();
+        foverlay = new Font("OVFONT");
+        foverlay->scale();
     }
 
     loading_text("Loading and initializing board-graphics.");
@@ -3007,7 +3010,7 @@ void load_up(void) {
     cursor = new Bitmap("CURSOR");
 
     loading_text("Loading data for chat support.");
-    chat_overlay_init(frost);
+    chat_overlay_init(frost); // not foverlay since a background is drawn
 }
 
 
@@ -3818,7 +3821,7 @@ int main(int argc, char *argv[]) {
                               (findparameter_arg("-netpassword") != NULL)
                               ? findparameter_arg("-netpassword")
                               : config.neth_password,
-                              frost);
+                              foverlay);
     }
 
     if (loading_texts) {

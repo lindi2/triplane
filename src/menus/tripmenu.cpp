@@ -3409,7 +3409,7 @@ void netgame_menu(void) {
                     network_activate_host(config.neth_listenaddr,
                                           config.neth_listenport,
                                           config.neth_password,
-                                          frost);
+                                          foverlay);
                     // After activating the host, move to the assign
                     // players menu (to select players) and then back
                     // to the main menu

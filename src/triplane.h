@@ -119,6 +119,7 @@ extern int struct_heigth[MAX_STRUCTURES];
 extern Font *fontti;
 extern Font *frost;
 extern Font *grid2;
+extern Font *foverlay;
 
 //\ Shots control
 

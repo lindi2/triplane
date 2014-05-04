@@ -102,7 +102,7 @@ static void netc_print_texts(void) {
     int i;
     uint32_t oldesttime;
 
-    frost->printf(x, y, "Network game client");
+    foverlay->printf(x, y, "Network game client");
     y += linesep;
 
     // don't display info older than 10 seconds
@@ -111,7 +111,7 @@ static void netc_print_texts(void) {
     i = (netcinfo_next + 1) % NETCINFO_LINES;
     do {
         if (netcinfo_times[i] != 0 && netcinfo_times[i] > oldesttime) {
-            frost->printf(x, y, "%s", netcinfo_texts[i]);
+            foverlay->printf(x, y, "%s", netcinfo_texts[i]);
             y += linesep;
         }
         i = (i + 1) % NETCINFO_LINES;
