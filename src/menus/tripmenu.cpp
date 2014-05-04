@@ -3415,6 +3415,15 @@ void netgame_menu(void) {
                     // to the main menu
                     exit_flag = 1;
                     wait_mouse_relase();
+                    // Unset any solo players, so that the assign
+                    // players menu starts assigning players for a
+                    // multiplayer game by default
+                    for (i = 0; i < 4; i++) {
+                        if (config.player_type[i] == 1) {
+                            config.player_type[i] = 0;
+                            config.player_number[i] = -1;
+                        }
+                    }
                     assign_menu();
                 }
                 break;
