@@ -1141,6 +1141,16 @@ void network_update(void) {
             }
         }
     }
+
+    /* Close old non-accepted connections */
+    uint32_t long_ago = SDL_GetTicks() - 15000;
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        if (clients[i].state == CS_CONNECTED &&
+            clients[i].connecttime < long_ago) {
+            netinfo_printf(0, "No data received from client #%d", i);
+            client_close(i);
+        }
+    }
 }
 
 /* prepare to quit */
