@@ -36,7 +36,7 @@ class Font {
     int linespace;
 
   public:
-      Font(const char *font_name);
+      Font(const char *font_name, int fgcolor=-1, int outlinecolor=-1);
      ~Font();
     int printf(int x, int y, const char *fmt, ...);
     int scanf(int x, int y, char *str, int max_len);

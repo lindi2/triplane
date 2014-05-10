@@ -24,7 +24,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-Font::Font(const char *font_name) {
+Font::Font(const char *font_name, int fgcolor, int outlinecolor) {
     int temp;
     int temppi;
     int kokox, kokoy;
@@ -62,6 +62,23 @@ Font::Font(const char *font_name) {
             } else
                 glyphs[temp] = NULL;
         }
+
+    if (fgcolor != -1) {
+        for (temp = 0; temp < 256; temp++)
+            if (glyphs[temp] != NULL)
+                glyphs[temp]->recolor(0, fgcolor);
+    }
+
+    if (outlinecolor != -1) {
+        for (temp = 0; temp < 256; temp++)
+            if (glyphs[temp] != NULL)
+                glyphs[temp]->outline(outlinecolor);
+        width += 2;
+        height += 2;
+        charspace--;
+        charspace--; // to compensate for count_scale ignoring outline
+        linespace--;
+    }
 
     count_scale();
 }
