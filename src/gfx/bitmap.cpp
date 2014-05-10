@@ -457,6 +457,61 @@ void Bitmap::blit_to_bitmap(Bitmap * to, int xx, int yy) {
     to->refresh_sdlsurface();
 }
 
+void Bitmap::recolor(unsigned char oldcolor, unsigned char newcolor) {
+    int i;
+
+    assert(!external_image_data);
+
+    for (i = 0; i < width * height; i++)
+        if (image_data[i] == oldcolor)
+            image_data[i] = newcolor;
+
+    data_sent = 0;
+    refresh_sdlsurface();
+}
+
+void Bitmap::blit_data(int tox, int toy,
+                       const unsigned char *data, int w, int h,
+                       int mask_color) {
+    int lx, ly;
+
+    assert(tox + w <= width);
+    assert(toy + h <= height);
+
+    for (lx = 0; lx < w; lx++)
+        for (ly = 0; ly < h; ly++)
+            if (data[ly * w + lx] != 255)
+                image_data[(toy + ly) * width + tox + lx] =
+                    (mask_color == -1) ? data[ly * w + lx] : mask_color;
+}
+
+void Bitmap::outline(unsigned char outlinecolor) {
+    unsigned char *old_data = image_data;
+
+    assert(!external_image_data);
+
+    width += 2;
+    height += 2;
+    hastransparency = 1;
+    image_data = (unsigned char *) walloc(width * height);
+
+    memset(image_data, 255, width * height);
+
+    blit_data(0, 0, old_data, width - 2, height - 2, outlinecolor);
+    blit_data(1, 0, old_data, width - 2, height - 2, outlinecolor);
+    blit_data(2, 0, old_data, width - 2, height - 2, outlinecolor);
+    blit_data(0, 1, old_data, width - 2, height - 2, outlinecolor);
+    blit_data(2, 1, old_data, width - 2, height - 2, outlinecolor);
+    blit_data(0, 2, old_data, width - 2, height - 2, outlinecolor);
+    blit_data(1, 2, old_data, width - 2, height - 2, outlinecolor);
+    blit_data(2, 2, old_data, width - 2, height - 2, outlinecolor);
+    blit_data(1, 1, old_data, width - 2, height - 2);
+
+    wfree(old_data);
+    data_sent = 0;
+    refresh_sdlsurface();
+}
+
 Bitmap *rotate_bitmap(Bitmap * picture, int degrees) {
     Bitmap *picture2;
     unsigned char *picture_data;

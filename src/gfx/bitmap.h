@@ -49,11 +49,19 @@ class Bitmap {
     void blit(int xx, int yy, int rx = 0, int ry = 0, int rx2 = 319, int ry2 = 199);
     void blit_fullscreen(void);
     void blit_to_bitmap(Bitmap * to, int xx, int yy);
+    void recolor(unsigned char oldcolor, unsigned char newcolor);
+    void outline(unsigned char outlinecolor);
+
     unsigned char *info(int *width = NULL, int *height = NULL);
     void refresh_sdlsurface();
     void clear_data_sent();
     void send_bitmapdata();
     void resend_bitmapdata();
+
+ private:
+    void blit_data(int tox, int toy,
+                   const unsigned char *data, int w, int h,
+                   int mask_color=-1);
 };
 
 void all_bitmaps_refresh(void);
