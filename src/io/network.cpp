@@ -133,7 +133,7 @@ static void netinfo_printf(uint8_t to_clients, const char *fmt, ...) {
 }
 
 void network_print_serverinfo(void) {
-    int x = 12, y = 7, linesep = 10;
+    int x = 12, y = 6, linesep = 10;
     int i, nclients = 0;
     uint32_t oldesttime;
     int display_was_enabled;

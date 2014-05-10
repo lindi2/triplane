@@ -98,7 +98,7 @@ static void netc_printf(const char *fmt, ...) {
 }
 
 static void netc_print_texts(void) {
-    int x = 12, y = 7, linesep = 10;
+    int x = 12, y = 6, linesep = 10;
     int i;
     uint32_t oldesttime;
 
