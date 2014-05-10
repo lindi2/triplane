@@ -32,6 +32,8 @@ class Font {
     int char_start[256];
     int scaled;
     int scaled_space;
+    int charspace;
+    int linespace;
 
   public:
       Font(const char *font_name);
@@ -42,6 +44,7 @@ class Font {
     void unscale(void);
     void count_scale(void);
     void set_space(int space);
+    void set_spacing(int charspace_=1, int linespace_=0);
 };
 
 #endif
