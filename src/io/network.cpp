@@ -763,6 +763,7 @@ static void net_receive_packet(int client,
 
         clients[client].cbufend = 0;
         compress_init(&clients[client].zs);
+        // Pretend the client has replied to a currently ongoing ping
         clients[client].last_pingid = last_pingid;
         clients[client].wanted_controls = -1;
         clients[client].state = CS_ACCEPTED;
@@ -1000,6 +1001,36 @@ void network_change_game_mode(int newmode) {
     }
 }
 
+static void network_handle_timeouts() {
+    static uint32_t last_periodic_ping = 0;
+    int i;
+
+    uint32_t time = SDL_GetTicks();
+
+    if (time > last_periodic_ping + 2000) {
+        for (i = 0; i < MAX_CONNECTIONS; i++) {
+            /* Close old non-accepted connections */
+            if (clients[i].state == CS_CONNECTED &&
+                time > clients[i].connecttime + 15000) {
+                netinfo_printf(0, "No data received from client #%d", i);
+                client_close(i);
+            }
+
+            /* Close connections that haven't replied to the last 10 pings */
+            if (clients[i].state >= CS_ACCEPTED &&
+                (256 + last_pingid - clients[i].last_pingid) % 256 > 10) {
+                netinfo_printf(0, "Ping timeout for %s",
+                               clients[i].name);
+                client_close(i);
+            }
+        }
+
+        /* Send pings every 2 seconds */
+        network_ping(0);
+        last_periodic_ping = time;
+    }
+}
+
 /* this is called periodically (once or twice every frame) */
 void network_update(void) {
     fd_set readfds, writefds, exceptfds;
@@ -1142,15 +1173,7 @@ void network_update(void) {
         }
     }
 
-    /* Close old non-accepted connections */
-    uint32_t long_ago = SDL_GetTicks() - 15000;
-    for (i = 0; i < MAX_CONNECTIONS; i++) {
-        if (clients[i].state == CS_CONNECTED &&
-            clients[i].connecttime < long_ago) {
-            netinfo_printf(0, "No data received from client #%d", i);
-            client_close(i);
-        }
-    }
+    network_handle_timeouts();
 }
 
 /* prepare to quit */
@@ -1184,9 +1207,9 @@ int network_is_active(void) {
 }
 
 /*
- * Pings all current clients. After this, network_last_ping_done()
- * will return 0 until either all clients have replied or the given
- * number of seconds has passed.
+ * Pings all current clients. If seconds > 0, after this
+ * network_last_ping_done() will return 0 until either all clients
+ * have replied or the given number of seconds has passed.
  */
 void network_ping(int seconds) {
     if (!network_host_active)
@@ -1199,32 +1222,24 @@ void network_ping(int seconds) {
     netsend_ping(last_pingid);
 
     if (seconds > 0)
-        last_ping_end = SDL_GetTicks() + 1000*seconds;
-    else
-        last_ping_end = 0;
+        last_ping_end = SDL_GetTicks() + 1000 * seconds;
 }
 
+/*
+ * Has everyone replied to the latest ping?
+ * Returns: 0 if a client has not replied to the latest ping and there
+ * is still time to wait; 1 if all clients have replied and there is
+ * still time to wait; 2 if the waiting time has run out.
+ */
 int network_last_ping_done(void) {
     int i;
 
     if (!network_host_active)
-        return 1;
+        return 1;               // safe answer for how this is used
 
-    if (last_ping_end == 0)
-        return 1;
-
-    uint32_t time = SDL_GetTicks();
-
-    if (time > last_ping_end) {
+    if (last_ping_end != 0 && SDL_GetTicks() > last_ping_end) {
         last_ping_end = 0;
-
-        for (i = 0; i < MAX_CONNECTIONS; i++)
-            if (clients[i].state >= CS_ACCEPTED &&
-                clients[i].last_pingid != last_pingid)
-                netinfo_printf(0, "%s did not reply to a ping in time",
-                               clients[i].name);
-
-        return 1;
+        return 2;
     }
 
     for (i = 0; i < MAX_CONNECTIONS; i++)
@@ -1232,10 +1247,11 @@ int network_last_ping_done(void) {
             clients[i].last_pingid != last_pingid)
             break;              /* no reply yet */
 
-    if (i == MAX_CONNECTIONS) { /* all have replied */
-        last_ping_end = 0;
+    if (i == MAX_CONNECTIONS)   /* all have replied */
         return 1;
-    }
+
+    if (last_ping_end == 0)
+        return 2;
 
     return 0;
 }

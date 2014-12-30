@@ -77,9 +77,9 @@
  * type=NET_PKTTYPE_PING:          should reply with C_PONG packet
  *   uint8_t pingid                copy this into your reply
  * length=6
- * (this is used to wait for all clients just before starting a game;
- * if you don't reply, the server waits longer and displays a warning,
- * but the game will work)
+ * (this is used to check network connectivity and to wait for all
+ * clients just before starting a game; if you don't reply, the server
+ * will disconnect you after about 20 seconds)
  *
  * type=NET_PKTTYPE_GAMEMODE:
  *   uint8_t new_mode              0=in menus now, 1=a game is in progress
@@ -201,6 +201,9 @@
  * echo -ne "\0\0\0\x30\xc8\x01debugtestingxtesting\0triplane\0\0\0\0\0\0\0\0\0\0\0\0\0" | nc localhost 9763 | pv >/dev/null
  * or to see some of the data:
  * echo -ne "\0\0\0\x30\xc8\x01debugtestingxtesting\0triplane\0\0\0\0\0\0\0\0\0\0\0\0\0" | nc localhost 9763 | perl -e 'use IO::Uncompress::Inflate qw(inflate); inflate("-" => "-") while !eof();' | hd | head -100
+ * However, these dummy clients do not reply to pings, so they will
+ * only receive about 20 seconds of data before the server disconnects
+ * them.
  */
 
 #define NET_PKTTYPE_QUIT                1
