@@ -29,18 +29,60 @@
 #include "io/video.h"
 #include <SDL.h>
 
+/*
+ * SDL_RenderSetLogicalSize does not expose functions to calculate its
+ * mapping, and both SDL_WarpMouseInWindow and SDL_GetMouseState work
+ * with physical coordinates. We thus need to convert them manually.
+ * Perhaps one day SDL will have equivalent functions that we can use
+ * instead of these...
+ */
+static void logical_to_physical(int logx, int logy, int *physx, int *physy) {
+    float scaleX, scaleY;
+    SDL_Rect vp;
+
+    SDL_RenderGetScale(video_state.renderer, &scaleX, &scaleY);
+    SDL_RenderGetViewport(video_state.renderer, &vp);
+
+    *physx = floor(vp.x * scaleX) + floor(logx * scaleX);
+    *physy = floor(vp.y * scaleY) + floor(logy * scaleY);
+}
+
+static void physical_to_logical(int physx, int physy, int *logx, int *logy) {
+    float scaleX, scaleY;
+    SDL_Rect vp;
+
+    SDL_RenderGetScale(video_state.renderer, &scaleX, &scaleY);
+    SDL_RenderGetViewport(video_state.renderer, &vp);
+
+    if (physx / scaleX <= vp.x)
+      *logx = 0;
+    else if (physx / scaleX >= vp.x + vp.w)
+      *logx = vp.w - 1;
+    else
+      *logx = ceil((physx - floor(vp.x * scaleX)) / scaleX);
+
+    if (physy / scaleY <= vp.y)
+      *logy = 0;
+    else if (physy / scaleY >= vp.y + vp.h)
+      *logy = vp.h - 1;
+    else
+      *logy = ceil((physy - floor(vp.y * scaleY)) / scaleY);
+}
+
 void hiiri_to(int x, int y) {
-    SDL_WarpMouse(x * pixel_multiplier, y * pixel_multiplier);
+    int px, py;
+    logical_to_physical(x, y, &px, &py);
+    SDL_WarpMouseInWindow(video_state.window, px, py);
 }
 
 void koords(int *x, int *y, int *n1, int *n2) {
     Uint8 ret;
+    int px, py;
 
     SDL_PumpEvents();
-    ret = SDL_GetMouseState(x, y);
+    ret = SDL_GetMouseState(&px, &py);
     *n1 = !!(ret & SDL_BUTTON(1));
     *n2 = !!(ret & SDL_BUTTON(3));
 
-    *x /= pixel_multiplier;
-    *y /= pixel_multiplier;
+    physical_to_logical(px, py, x, y);
 }

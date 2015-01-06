@@ -32,7 +32,7 @@ class Bitmap {
     int external_image_data;    // boolean: is image_data owned by this instance
     int hastransparency;
     int id;                     // a unique ID for this Bitmap
-    SDL_Surface *sdlsurface;
+    SDL_Texture *sdlsurface;    // the field name derives from SDL 1.x legacy
 
   public:
       Bitmap(const char *image_name, int transparent = 1);

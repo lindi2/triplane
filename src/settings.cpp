@@ -116,8 +116,8 @@ int select_key(int old) {
 
         if (ch == SDLK_ESCAPE)
             return old;
-        else if (ch == SDLK_PAUSE || ch == SDLK_NUMLOCK ||
-                 ch == SDLK_CAPSLOCK || ch == SDLK_SCROLLOCK)
+        else if (ch == SDLK_PAUSE || ch == SDLK_NUMLOCKCLEAR ||
+                 ch == SDLK_CAPSLOCK || ch == SDLK_SCROLLLOCK)
             continue;
         else
             return ch;
@@ -255,7 +255,7 @@ void load_keyset(void) {
 
         player_keys[1].up = SDLK_DOWN;
         player_keys[1].down = SDLK_UP;
-        player_keys[1].roll = SDLK_KP5;
+        player_keys[1].roll = SDLK_KP_5;
         player_keys[1].power = SDLK_KP_PLUS;
         player_keys[1].guns = SDLK_HOME;
         player_keys[1].bombs = SDLK_LEFT;

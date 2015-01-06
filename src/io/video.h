@@ -35,9 +35,11 @@ struct naytto {
 extern naytto ruutu;
 
 struct video_state_t {
-    SDL_Surface *surface;
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    SDL_Texture *texture;
+    uint32_t *texture_buffer;
     int init_done;
-    int haverealpalette;
 };
 extern struct video_state_t video_state;
 extern SDL_Color curpal[256];
@@ -54,7 +56,6 @@ void init_video(void);
 extern unsigned char *vircr;
 extern Bitmap *standard_background;
 extern int current_mode;
-extern int pixel_multiplier;
 extern int update_vircr_mode;
 extern int draw_with_vircr_mode;
 extern int pixel_multiplier_vga, pixel_multiplier_svga;

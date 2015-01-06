@@ -45,7 +45,7 @@ typedef struct {
 #endif
 } sb_mod_file;
 
-extern Uint8 *key;
+extern const Uint8 *key;
 extern int key_size;
 
 int kbhit(void);

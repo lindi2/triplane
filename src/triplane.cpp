@@ -946,24 +946,30 @@ void set_player_types(void) {
 }
 
 void set_keys_none(void) {
-    memset(current_keys, 0, 4*sizeof(keymap)); // SDLK_UNKNOWN is 0
+    // SDLK_UNKNOWN and SDL_SCANCODE_UNKNOWN are 0
+    memset(current_keys, 0, 4*sizeof(keymap));
     current_joystick[0] = -1;
     current_joystick[1] = -1;
 }
 
 void set_keys_from_multiplayer(int country) {
-    memcpy(&current_keys[country], &player_keys[country], sizeof(keymap));
+    current_keys[country].up = SDL_GetScancodeFromKey(player_keys[country].up);
+    current_keys[country].down = SDL_GetScancodeFromKey(player_keys[country].down);
+    current_keys[country].roll = SDL_GetScancodeFromKey(player_keys[country].roll);
+    current_keys[country].power = SDL_GetScancodeFromKey(player_keys[country].power);
+    current_keys[country].guns = SDL_GetScancodeFromKey(player_keys[country].guns);
+    current_keys[country].bombs = SDL_GetScancodeFromKey(player_keys[country].bombs);
     current_joystick[0] = config.joystick[0];
     current_joystick[1] = config.joystick[1];
 }
 
 void set_keys_from_roster(int country, int player_num) {
-    current_keys[country].up = roster[player_num].up;
-    current_keys[country].down = roster[player_num].down;
-    current_keys[country].roll = roster[player_num].roll;
-    current_keys[country].power = roster[player_num].power;
-    current_keys[country].guns = roster[player_num].guns;
-    current_keys[country].bombs = roster[player_num].bombs;
+    current_keys[country].up = SDL_GetScancodeFromKey(roster[player_num].up);
+    current_keys[country].down = SDL_GetScancodeFromKey(roster[player_num].down);
+    current_keys[country].roll = SDL_GetScancodeFromKey(roster[player_num].roll);
+    current_keys[country].power = SDL_GetScancodeFromKey(roster[player_num].power);
+    current_keys[country].guns = SDL_GetScancodeFromKey(roster[player_num].guns);
+    current_keys[country].bombs = SDL_GetScancodeFromKey(roster[player_num].bombs);
     // don't set current_joystick
 }
 
@@ -1712,41 +1718,47 @@ void main_engine(void) {
     while (flag) {
         update_key_state();
 
-        if (key[SDLK_PAUSE]) {
+        if (key && key[SDL_SCANCODE_PAUSE]) {
             // wait until pause key is released, then pressed and released again
-            while (key[SDLK_PAUSE]) {   // still pressed
+            while (!key || key[SDL_SCANCODE_PAUSE]) { // still pressed
                 nopeuskontrolli();
+                do_all();
                 update_key_state();
             }
-            while (!key[SDLK_PAUSE]) {  // released
+            while (!key || !key[SDL_SCANCODE_PAUSE]) { // released
                 nopeuskontrolli();
+                do_all();
                 update_key_state();
             }
-            while (key[SDLK_PAUSE]) {   // pressed again
+            while (!key || key[SDL_SCANCODE_PAUSE]) { // pressed again
                 nopeuskontrolli();
+                do_all();
                 update_key_state();
             }
         }
         // use F4 as an alias for the Pause key
         // because Pause does not always work reliably
         // (and is not present on all keyboards)
-        if (key[SDLK_F4]) {
+        if (key && key[SDL_SCANCODE_F4]) {
             // wait until F4 is released, then pressed and released again
-            while (key[SDLK_F4]) {      // still pressed
+            while (!key || key[SDL_SCANCODE_F4]) { // still pressed
                 nopeuskontrolli();
+                do_all();
                 update_key_state();
             }
-            while (!key[SDLK_F4]) {     // released
+            while (!key || !key[SDL_SCANCODE_F4]) { // released
                 nopeuskontrolli();
+                do_all();
                 update_key_state();
             }
-            while (key[SDLK_F4]) {      // pressed again
+            while (!key || key[SDL_SCANCODE_F4]) { // pressed again
                 nopeuskontrolli();
+                do_all();
                 update_key_state();
             }
         }
 
-        if (key[SDLK_ESCAPE]) {
+        if (key && key[SDL_SCANCODE_ESCAPE]) {
             flag = 0;
             mission_interrupted = 1;
         }
@@ -1865,7 +1877,7 @@ void main_engine(void) {
                     solo_success = 1;
             }
 
-            if (key[SDLK_F1] && key[SDLK_F2] && key[SDLK_F3]) {
+            if (key && key[SDL_SCANCODE_F1] && key[SDL_SCANCODE_F2] && key[SDL_SCANCODE_F3]) {
                 frost->printf(40, 40, "SoloDestRemaining: %d. l=%d\n", solo_dest_remaining, l);
 
             }

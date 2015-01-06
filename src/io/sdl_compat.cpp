@@ -37,8 +37,8 @@
 #include "util/wutil.h"
 #include "io/timing.h"
 
-Uint8 *key;
-int key_size;
+const Uint8 *key = NULL;
+int key_size = 0;
 
 int kbhit(void) {
     SDL_Event e;
@@ -47,7 +47,7 @@ int kbhit(void) {
     nopeuskontrolli();
 
     SDL_PumpEvents();
-    ret = SDL_PeepEvents(&e, 1, SDL_PEEKEVENT, SDL_EVENTMASK(SDL_KEYUP));
+    ret = SDL_PeepEvents(&e, 1, SDL_PEEKEVENT, SDL_KEYUP, SDL_KEYUP);
     if (ret) {
         // leave SDL_KEYUP event in queue (getch() should be called next)
         return 1;
@@ -88,22 +88,21 @@ void update_key_state(void) {
     while (getch() != 0)
         ;
 
-    key = SDL_GetKeyState(&key_size);
+    key = SDL_GetKeyboardState(&key_size);
 }
 
 void wait_relase(void) {
     int c = 0;
 
-    while (c != SDLK_LAST) {
+    while (c != key_size) {
         nopeuskontrolli();
         do_all();
         update_key_state();
 
-        for (c = 0; c < SDLK_LAST; c++)
-            if (key[c] && c != SDLK_NUMLOCK && c != SDLK_CAPSLOCK && c != SDLK_SCROLLOCK)
+        for (c = 0; c < key_size; c++)
+            if (key[c])
                 break;
     }
-
 }
 
 /**
@@ -244,8 +243,7 @@ sb_mod_file *sdl_load_mod_file(const char *name) {
     mod = (sb_mod_file *) walloc(sizeof(sb_mod_file));
 
     rwops = SDL_RWFromConstMem(p, len);
-    mod->music = Mix_LoadMUS_RW(rwops);
-    SDL_FreeRW(rwops);
+    mod->music = Mix_LoadMUSType_RW(rwops, MUS_MOD, SDL_TRUE);
     if (mod->music == NULL) {
         fprintf(stderr, "sdl_load_mod_file: %s\n", Mix_GetError());
         exit(1);
