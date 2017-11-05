@@ -54,6 +54,5 @@ void aces_multi_total(void);
 void aces_solo_total(void);
 void aces_one_solo(int country, int mission);
 int calculate_multitotal(int player);
-void show_feat5(void);
 
 #endif
