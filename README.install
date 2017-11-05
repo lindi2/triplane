@@ -5,8 +5,8 @@ Dependencies
 ------------
 
 * g++
-* SDL 1.2 
-* SDL mixer 1.2
+* SDL 2.0
+* SDL mixer 2.0
 * GNU make
 
 Build procedure
