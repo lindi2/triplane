@@ -20,6 +20,7 @@
 
 #include <SDL.h>
 #include <ctype.h>
+#include "io/video.h"
 
 #ifdef HAVE_SDL_MIXER
 /* 
@@ -36,18 +37,24 @@
 #include "util/wutil.h"
 #include "io/timing.h"
 
+Uint8 *key;
+int key_size;
+
 int kbhit(void) {
     SDL_Event e;
     int ret;
 
     nopeuskontrolli();
 
-    ret = SDL_PeepEvents(&e, 1, SDL_PEEKEVENT, ~0);
+    SDL_PumpEvents();
+    ret = SDL_PeepEvents(&e, 1, SDL_PEEKEVENT, SDL_EVENTMASK(SDL_KEYUP));
     if (ret) {
-        if (e.type == SDL_KEYUP) {
-            return 1;
-        } else {
-            SDL_PollEvent(&e);
+        // leave SDL_KEYUP event in queue (getch() should be called next)
+        return 1;
+    } else {
+        // clear event queue (triplane code needs only SDL_KEYUP events)
+        while (SDL_PollEvent(&e)) {
+            ;
         }
     }
     return 0;
@@ -56,32 +63,47 @@ int kbhit(void) {
 int getch(void) {
     SDL_Event e;
 
-    for (;;) {
-        if (SDL_PollEvent(&e)) {
-            if (e.type == SDL_KEYUP) {
-                int s, m;
-                s = e.key.keysym.sym;
-                m = e.key.keysym.mod;
-                if (s == SDLK_RSHIFT || s == SDLK_LSHIFT) {
-                    continue;
-                }
-                if (m == KMOD_LSHIFT || m == KMOD_RSHIFT) {
-                    if (s >= SDLK_a && s <= SDLK_z) {
-                        s = toupper(s);
-                    }
-                }
-                return s;
+    SDL_PumpEvents();
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_KEYUP) {
+            int s, m;
+            s = e.key.keysym.sym;
+            m = e.key.keysym.mod;
+            if (s == SDLK_RSHIFT || s == SDLK_LSHIFT) {
+                continue;
             }
+            if (m == KMOD_LSHIFT || m == KMOD_RSHIFT) {
+                if (s >= SDLK_a && s <= SDLK_z) {
+                    s = toupper(s);
+                }
+            }
+            return s;
         }
     }
+
+    return 0;                   // no key was found
 }
 
 void update_key_state(void) {
-    SDL_Event e;
-    SDL_PumpEvents();
-    while (SDL_PollEvent(&e)) {
+    while (getch() != 0)
         ;
+
+    key = SDL_GetKeyState(&key_size);
+}
+
+void wait_relase(void) {
+    int c = 0;
+
+    while (c != SDLK_LAST) {
+        nopeuskontrolli();
+        do_all();
+        update_key_state();
+
+        for (c = 0; c < SDLK_LAST; c++)
+            if (key[c] && c != SDLK_NUMLOCK && c != SDLK_CAPSLOCK && c != SDLK_SCROLLOCK)
+                break;
     }
+
 }
 
 /**

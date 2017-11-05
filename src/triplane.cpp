@@ -27,6 +27,7 @@
 #include "triplane.h"
 #include "io/joystick.h"
 #include "gfx/gfx.h"
+#include "menus/menusupport.h"
 #include "menus/tripmenu.h"
 #include "world/terrain.h"
 #include "world/fobjects.h"
@@ -375,7 +376,6 @@ void itgun_sound(int itgun_x);
 void rotate_water_palet(void);
 void cause_damage(int amount, int plane);
 int small_warning(const char *message);
-int big_warning(const char *message);
 void load_all_samples(void);
 void init_sologame(void);
 void write_files(void);
@@ -604,14 +604,20 @@ void init_sologame(void) {
 
 int small_warning(const char *message) {
     Bitmap *warnkuva;
-    int flag = 1;
+    int flag = 1, exit_flag = 0;
     int x, y, n1, n2;
     int response = 0;
 
     warnkuva = new Bitmap("WARN2");
 
     while (flag) {
-        koords(&x, &y, &n1, &n2);
+        menu_keys(&exit_flag, NULL);
+        menu_mouse(&x, &y, &n1, &n2);
+
+        if (exit_flag) {
+            flag = 0;
+            response = 0;
+        }
 
         tyhjaa_vircr();
         warnkuva->blit(87, 59);
@@ -637,19 +643,12 @@ int small_warning(const char *message) {
         }
     }
 
-    while (n1 || n2)
-        koords(&x, &y, &n1, &n2);
+
+    wait_mouse_relase();
 
     delete warnkuva;
 
     return response;
-}
-
-int big_warning(const char *message) {
-    if (message == NULL)
-        return 0;
-    else
-        return 0;
 }
 
 void cause_damage(int amount, int plane) {
@@ -1896,9 +1895,8 @@ void do_aftermath(int show_it_all) {
     int struct_score = 0;
     int some_score;
     int aaa_score = 0;
-    int x, y, n1, n2;
+    int x, y, n1, n2, exit_flag = 0;
     int need_for_letter = 0;
-    char ch;
     Bitmap *fly, *exit;
     int x_coord;
     int best_in_record = 0;
@@ -2260,27 +2258,10 @@ void do_aftermath(int show_it_all) {
         l = 1;
 
         while (l == 1) {
-            if (kbhit()) {
-                if ((ch = getch()) == 27) {
-                    l = 0;
-
-                }
-
-                if (ch == 13) {
-                    l = 2;
-                    if (!need_for_letter) {
-                        if (!mission_success)
-                            mission_re_fly = solo_mission;
-                        else
-                            mission_re_fly = 999;
-                    }
-                }
-
-            }
-
-
-            koords(&x, &y, &n1, &n2);
-
+            menu_keys(&exit_flag, NULL);
+            if (exit_flag)
+                l = 0;
+            menu_mouse(&x, &y, &n1, &n2);
 
             if (n1 || n2) {
                 if (playing_solo) {
@@ -3571,7 +3552,7 @@ void handle_parameters(void) {
 }
 
 int main(int argc, char *argv[]) {
-    int x, y, n1, n2;
+    int x, n1, n2;
     int laskuri;
     FILE *faili;
     Bitmap *lakuva1;
@@ -3687,23 +3668,8 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
     }
 
-    n1 = 0;
-    while (!n1 && !findparameter("-autostart")) {
-        if (kbhit())
-            break;
-
-        koords(&x, &y, &n1, &n2);
-
-        if (n1 || n2) {
-            wait_mouse_relase();
-            break;
-        }
-
-    }
-
-    while (kbhit() && !findparameter("-autostart"))
-        getch();
-
+    if (!findparameter("-autostart"))
+        wait_press_and_release();
 
     if (sfx_loaded) {
         sample_alku->right_volume = 0;
@@ -3720,21 +3686,9 @@ int main(int argc, char *argv[]) {
 
     delete lakuva1;
 
-
-    while (!kbhit() && !findparameter("-autostart")) {
-        koords(&x, &y, &n1, &n2);
-
-        if (n1 || n2) {
-            wait_mouse_relase();
-            break;
-        }
-
-    }
+    if (!findparameter("-autostart"))
+        wait_press_and_release();
 #endif
-
-    while (kbhit() && !findparameter("-autostart"))
-        getch();
-
 
     loading_text("Loading roster.");
     load_roster();
@@ -3743,8 +3697,7 @@ int main(int argc, char *argv[]) {
     if (!findparameter("-debugnographics"))
         init_vga("PALET5");
 
-    while (kbhit())
-        getch();
+    wait_mouse_relase();
 
     main_menu();
     save_roster();

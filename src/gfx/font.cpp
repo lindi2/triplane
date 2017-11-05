@@ -146,11 +146,11 @@ int Font::scanf(int x, int y, char *str, int max_len) {
         tausta_roska->blit(x, y);
         printf(printf(x, y, "%s", str), y, "_");
         do_all();
+        if (!kbhit()) {
+            continue;
+        }
         ch = getch();
-        if (!ch) {
-            getch();
-            ch = 0;
-        } else if (ch != 13) {
+        if (ch != 0 && ch != 13) {
             if (ch == 8) {
                 if (kohta) {
                     kohta--;

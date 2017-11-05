@@ -43,7 +43,6 @@ int solo_player_menu(void);
 
 void print_clear_roster(Bitmap * rosteri);
 void print_filled_roster(int number);
-void wait_mouse_relase(int nokb = 0);
 void load_descriptions(int number);
 void show_descriptions(int number);
 void sort_and_show(int percent = 0);

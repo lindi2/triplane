@@ -16,7 +16,8 @@ COMMON_OBJS = src/gfx/bitmap.o src/gfx/font.o \
 	src/io/sdl_compat.o src/io/video.o \
 	src/io/mouse.o src/io/dksfile.o src/io/timing.o
 TRIPLANE_OBJS = src/triplane.o src/world/tripai.o \
-	src/world/tripmis.o src/gfx/fades.o src/menus/tripmenu.o \
+	src/world/tripmis.o src/gfx/fades.o \
+	src/menus/menusupport.o src/menus/tripmenu.o \
 	src/world/terrain.o src/world/fobjects.o src/world/tmexept.o \
 	src/gfx/extra.o src/settings.o src/world/plane.o src/io/joystick.o src/io/sound.o \
 	src/world/tripaudio.o

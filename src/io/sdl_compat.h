@@ -27,17 +27,10 @@
 
 #define SAMPLE_VOLUME 20
 
-#define PAUSE_KEY SDLK_PAUSE
-
 #define SOUNDCARD_NONE 0
 #define SOUNDCARD_GUS  1
 #define SOUNDCARD_SB   2
 #define SOUNDCARD_SDL  3
-
-int kbhit(void);
-int getch(void);
-
-extern unsigned char *key;
 
 typedef struct {
     int right_volume, left_volume;
@@ -52,7 +45,14 @@ typedef struct {
 #endif
 } sb_mod_file;
 
+extern Uint8 *key;
+extern int key_size;
+
+int kbhit(void);
+int getch(void);
 void update_key_state(void);
+void wait_relase(void);
+
 int sdl_init_sounds(void);
 void sdl_uninit_sounds(void);
 void sdl_play_sample(sb_sample * sample, int looping = 0);

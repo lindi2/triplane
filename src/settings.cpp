@@ -21,6 +21,7 @@
 #include <triplane.h>
 #include <SDL.h>
 #include <SDL_endian.h>
+#include "io/sdl_compat.h"
 #include "io/sound.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -33,7 +34,6 @@
 
 //\\ Keys
 
-Uint8 *key = SDL_GetKeyState(NULL);
 struct keymap player_keys[4];
 
 //\\ Rosterdata
@@ -106,44 +106,22 @@ FILE *settings_open(const char *filename, const char *mode) {
     return fp;
 }
 
-void wait_relase(void) {
-    int c = 0;
+int select_key(int old) {
+    int ch;
 
-    while (c != SDLK_LAST) {
-        update_key_state();
-        for (c = 0; c < SDLK_LAST; c++)
-            if (key[c] && c != SDLK_NUMLOCK && c != SDLK_CAPSLOCK && c != SDLK_SCROLLOCK)
-                break;
+    for (;;) {
+        while (!kbhit())
+            do_all();
+        ch = getch();
+
+        if (ch == SDLK_ESCAPE)
+            return old;
+        else if (ch == SDLK_PAUSE || ch == SDLK_NUMLOCK ||
+                 ch == SDLK_CAPSLOCK || ch == SDLK_SCROLLOCK)
+            continue;
+        else
+            return ch;
     }
-
-}
-
-int select_key(int player, int old) {
-    int c;
-    int flag = 1;
-
-    while (flag) {
-        if (key[SDLK_ESCAPE])
-            flag = 0;
-
-        update_key_state();
-
-        for (c = 0; c < SDLK_LAST; c++)
-            if (key[c] && c != SDLK_NUMLOCK && c != SDLK_CAPSLOCK && c != SDLK_SCROLLOCK)
-                break;
-
-        if (c != SDLK_LAST)
-            if ((c != SDLK_ESCAPE) && (c != SDLK_PAUSE)) {
-                wait_relase();
-                return c;
-            }
-        if (player == 100)
-            return 100;
-    }
-
-    wait_relase();
-    return old;
-
 }
 
 void swap_roster_endianes(void) {

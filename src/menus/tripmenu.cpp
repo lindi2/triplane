@@ -22,7 +22,8 @@
 
 #include "io/trip_io.h"
 #include "triplane.h"
-#include "tripmenu.h"
+#include "menus/tripmenu.h"
+#include "menus/menusupport.h"
 #include <SDL.h>
 #include <time.h>
 #include <string.h>
@@ -561,7 +562,7 @@ int solo_player_menu(void) {
     Bitmap *misbak = 0;
     Bitmap *face = 0;
     Bitmap *mission = 0;
-    int flag = 0;
+    int flag = 0, exit_flag = 0;
     int l;
     int x, y, n1, n2;
 
@@ -608,11 +609,12 @@ int solo_player_menu(void) {
     }
 
     while (flag == 0) {
-        if (kbhit() && getch() == SDLK_ESCAPE) {
+        menu_keys(&exit_flag, NULL);
+        if (exit_flag) {
             flag = 2;
         }
 
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
 
         cursor->blit(x - 10, y - 10);
         do_all_clear();
@@ -694,7 +696,6 @@ void roster_menu(void) {
     static int number = -1;
     int keysetmode = 0;
     int help_on = 0;
-    char ch;
     Bitmap *help;
     Bitmap *rosteri;
     Bitmap *buttl, *buttr;
@@ -738,20 +739,9 @@ void roster_menu(void) {
     hiiri_to(264, 109);
 
     while (!exit_flag) {
-        if (kbhit()) {
-            if (!(ch = getch())) {
-                ch = getch();
-                if (ch == 59)
-                    wtoggle(&help_on);
+        menu_keys(&exit_flag, &help_on);
 
-            } else {
-                if (ch == 27)
-                    exit_flag = 1;
-            }
-
-        }
-
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
 
         if (number != -1) {
             if (!keysetmode) {
@@ -978,40 +968,40 @@ void roster_menu(void) {
                 frost->printf(125, 100, "Key for upward turn [%s]", SDL_GetKeyName((SDLKey) roster[number].up));
                 do_all();
 
-                roster[number].up = select_key(number, roster[number].up);
+                roster[number].up = select_key(roster[number].up);
 
                 rosteri->blit(0, 0);
                 frost->printf(125, 100, "Key for downward turn [%s]", SDL_GetKeyName((SDLKey) roster[number].down));
                 do_all();
 
-                roster[number].down = select_key(number, roster[number].down);
+                roster[number].down = select_key(roster[number].down);
 
                 rosteri->blit(0, 0);
                 frost->printf(125, 100, "Key for roll [%s]", SDL_GetKeyName((SDLKey) roster[number].roll));
                 do_all();
 
-                roster[number].roll = select_key(number, roster[number].roll);
+                roster[number].roll = select_key(roster[number].roll);
 
                 rosteri->blit(0, 0);
 
                 frost->printf(125, 100, "Key for engine power [%s]", SDL_GetKeyName((SDLKey) roster[number].power));
                 do_all();
 
-                roster[number].power = select_key(number, roster[number].power);
+                roster[number].power = select_key(roster[number].power);
 
                 rosteri->blit(0, 0);
 
                 frost->printf(125, 100, "Key for bomb drop [%s]", SDL_GetKeyName((SDLKey) roster[number].bombs));
                 do_all();
 
-                roster[number].bombs = select_key(number, roster[number].bombs);
+                roster[number].bombs = select_key(roster[number].bombs);
 
                 rosteri->blit(0, 0);
 
                 frost->printf(125, 100, "Key for guns [%s]", SDL_GetKeyName((SDLKey) roster[number].guns));
                 do_all();
 
-                roster[number].guns = select_key(number, roster[number].guns);
+                roster[number].guns = select_key(roster[number].guns);
                 break;
 
             case 5:
@@ -1131,11 +1121,9 @@ void options_menu(void) {
     opt2 = new Bitmap("OPT2");
 
     while (!exit_flag) {
-        if (kbhit())
-            if (getch() == 27)
-                exit_flag = 1;
+        menu_keys(&exit_flag, NULL);
 
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
         optionme->blit(0, 0);
         kohta[3 - optimode]->blit(248, 13);
         frost->printf(73, 43, "%s", selitykset[optimode]);
@@ -1871,11 +1859,9 @@ void transfer_menu(void) {
     optionme = new Bitmap("TRANSF");
 
     while (!exit_flag) {
-        if (kbhit())
-            if (getch() == 27)
-                exit_flag = 1;
+        menu_keys(&exit_flag, NULL);
 
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
         optionme->blit(0, 0);
 
         color_bites[config.current_multilevel]->blit(39 + config.current_multilevel * 80 - (config.current_multilevel / 3) * 240,
@@ -1964,11 +1950,15 @@ static void joystick_setup(int joy, Bitmap * controlme) {
     controlme->blit(0, 0);
     frost->printf(54, 93, "Keep joystick idle and press");
     frost->printf(54, 100, "Space (Esc=use old settings)");
-    do_all();
     do {
+        do_all();
+        if (!kbhit()) {
+            c = 0;
+            continue;
+        }
         c = getch();
-    } while (c != 27 && c != ' ');
-    if (c == 27)
+    } while (c != SDLK_ESCAPE && c != ' ');
+    if (c == SDLK_ESCAPE)
         goto joystick_setup_exit;
 
     save_axis_state(idle, joy);
@@ -1977,11 +1967,15 @@ static void joystick_setup(int joy, Bitmap * controlme) {
         controlme->blit(0, 0);
         frost->printf(54, 93, "Do '%s' on joystick and", acts[i].prompt);
         frost->printf(54, 100, "press Space or D=disable this");
-        do_all();
         do {
+            do_all();
+            if (!kbhit()) {
+                c = 0;
+                continue;
+            }
             c = getch();
-        } while (c != 27 && c != ' ' && c != 'd' && c != 'D');
-        if (c == 27) {
+        } while (c != SDLK_ESCAPE && c != ' ' && c != 'd' && c != 'D');
+        if (c == SDLK_ESCAPE) {
             goto joystick_setup_exit;
         } else if (c == 'd' || c == 'D') {
             set_disabled_action(acts[i].act);
@@ -2001,7 +1995,6 @@ static void joystick_setup(int joy, Bitmap * controlme) {
 }
 
 void controls_menu(void) {
-    char ch;
     int help_on = 0;
     int exit_flag = 0;
     int x, y, n1, n2;
@@ -2021,20 +2014,9 @@ void controls_menu(void) {
 
 
     while (!exit_flag) {
-        if (kbhit()) {
-            if (!(ch = getch())) {
-                ch = getch();
-                if (ch == 59)
-                    wtoggle(&help_on);
+        menu_keys(&exit_flag, &help_on);
 
-            } else {
-                if (ch == 27)
-                    exit_flag = 1;
-            }
-
-        }
-
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
         controlme->blit(0, 0);
 
         napp[active]->blit((active % 2) * 27 + 10, (active / 2) * 23 + 22);
@@ -2142,42 +2124,42 @@ void controls_menu(void) {
                 frost->printf(56, 97, "Key for upward turn [%s]", SDL_GetKeyName((SDLKey) player_keys[active].up));
                 do_all();
 
-                player_keys[active].up = select_key(active, player_keys[active].up);
+                player_keys[active].up = select_key(player_keys[active].up);
 
                 controlme->blit(0, 0);
                 napp[active]->blit((active % 2) * 27 + 10, (active / 2) * 23 + 22);
                 frost->printf(56, 97, "Key for downward turn [%s]", SDL_GetKeyName((SDLKey) player_keys[active].down));
                 do_all();
 
-                player_keys[active].down = select_key(active, player_keys[active].down);
+                player_keys[active].down = select_key(player_keys[active].down);
 
                 controlme->blit(0, 0);
                 napp[active]->blit((active % 2) * 27 + 10, (active / 2) * 23 + 22);
                 frost->printf(56, 97, "Key for roll [%s]", SDL_GetKeyName((SDLKey) player_keys[active].roll));
                 do_all();
 
-                player_keys[active].roll = select_key(active, player_keys[active].roll);
+                player_keys[active].roll = select_key(player_keys[active].roll);
 
                 controlme->blit(0, 0);
                 napp[active]->blit((active % 2) * 27 + 10, (active / 2) * 23 + 22);
                 frost->printf(56, 97, "Key for engine power [%s]", SDL_GetKeyName((SDLKey) player_keys[active].power));
                 do_all();
 
-                player_keys[active].power = select_key(active, player_keys[active].power);
+                player_keys[active].power = select_key(player_keys[active].power);
 
                 controlme->blit(0, 0);
                 napp[active]->blit((active % 2) * 27 + 10, (active / 2) * 23 + 22);
                 frost->printf(56, 97, "Key for bomb drop [%s]", SDL_GetKeyName((SDLKey) player_keys[active].bombs));
                 do_all();
 
-                player_keys[active].bombs = select_key(active, player_keys[active].bombs);
+                player_keys[active].bombs = select_key(player_keys[active].bombs);
 
                 controlme->blit(0, 0);
                 napp[active]->blit((active % 2) * 27 + 10, (active / 2) * 23 + 22);
                 frost->printf(56, 97, "Key for guns [%s]", SDL_GetKeyName((SDLKey) player_keys[active].guns));
                 do_all();
 
-                player_keys[active].guns = select_key(active, player_keys[active].guns);
+                player_keys[active].guns = select_key(player_keys[active].guns);
 
                 save_keyset();
                 break;
@@ -2237,7 +2219,6 @@ void assign_menu(void) {
     int lym[4] = { 0, 11, 24, 36 };
     int response;
     int help_on = 0;
-    char ch;
 
     if (!roster[0].pilotname[0]) {
         response = small_warning("You have no pilots in the roster and\n"
@@ -2258,20 +2239,9 @@ void assign_menu(void) {
 
 
     while (!exit_flag) {
-        if (kbhit()) {
-            if (!(ch = getch())) {
-                ch = getch();
-                if (ch == 59)
-                    wtoggle(&help_on);
+        menu_keys(&exit_flag, &help_on);
 
-            } else {
-                if (ch == 27)
-                    exit_flag = 1;
-            }
-
-        }
-
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
         acesme->blit(0, 0);
 
 
@@ -2536,7 +2506,6 @@ void aces_menu(void) {
     int menuselect;
     int current_page = 0;
     int help_on = 0;
-    char ch;
     Bitmap *acesme;
     Bitmap *firstpage;
     Bitmap *buttl;
@@ -2562,21 +2531,9 @@ void aces_menu(void) {
     do_all_clear();
 
     while (!exit_flag) {
+        menu_keys(&exit_flag, &help_on);
 
-        if (kbhit()) {
-            if (!(ch = getch())) {
-                ch = getch();
-                if (ch == 59)
-                    wtoggle(&help_on);
-
-            } else {
-                if (ch == 27)
-                    exit_flag = 1;
-            }
-
-        }
-
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
 
         if (!current_page)
             firstpage->blit(75, 34);
@@ -2737,11 +2694,9 @@ int kangas_menu(void) {
     }
 
     while (!exit_flag) {
-        if (kbhit() && getch() == SDLK_ESCAPE) {
-            exit_flag = 1;
-        }
+        menu_keys(&exit_flag, NULL);
 
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
         kangas->blit_fullscreen();
         kangas_terrain_to_screen(place_x);
 
@@ -2872,12 +2827,9 @@ void credits_menu(void) {
         init_vga("PALET7");
 
     while (!exit_flag) {
-        if (kbhit()) {
-            getch();
-            exit_flag = 1;
-        }
+        menu_keys(&exit_flag, NULL);
+        menu_mouse(&x, &y, &n1, &n2);
 
-        koords(&x, &y, &n1, &n2);
         credi1->blit(0, 0);
 
 
@@ -2942,12 +2894,9 @@ void letter_menu(void) {
     letter = new Bitmap("LETTER");
 
     while (!exit_flag) {
-        if (kbhit()) {
-            getch();
-            exit_flag = 1;
-        }
+        menu_keys(&exit_flag, NULL);
+        menu_mouse(&x, &y, &n1, &n2);
 
-        koords(&x, &y, &n1, &n2);
         letter->blit(0, 0);
         medal1->blit(15, 80);
         frost->printf(145, 104, "From: %s central command headquaters.", country_names[solo_country]);
@@ -2986,15 +2935,12 @@ void letter_menu(void) {
     }
 }
 
-
-
 void main_menu(void) {
     int exit_flag = 0;
     int x, y, n1, n2;
     int menuselect;
     int l, l2, l3;
     int help_on = 0;
-    int ch;
     Bitmap *help;
 
     help = new Bitmap("HELP1");
@@ -3009,17 +2955,9 @@ void main_menu(void) {
     hiiri_to(254, 120);
 
     while (!exit_flag) {
-        if (kbhit()) {
-            ch = getch();
-            if (ch == SDLK_F1) {
-                wtoggle(&help_on);
-            } else {
-                if (ch == SDLK_ESCAPE)
-                    exit_flag = 1;
-            }
-        }
+        menu_keys(&exit_flag, &help_on);
 
-        koords(&x, &y, &n1, &n2);
+        menu_mouse(&x, &y, &n1, &n2);
         menu1->blit(0, 0);      // 0,0,799,599
         grid2->printf(34, 156, "Press F1\nfor Help");
 
@@ -3462,16 +3400,4 @@ void print_filled_roster(int number) {
 
     frost->printf(122, 177, "Total: %d", ts + roster[number].solo_mis_totals);
 
-}
-
-void wait_mouse_relase(int nokb) {
-    int n1 = 1, n2 = 1, x, y;
-
-    while (n1 || n2) {
-        koords(&x, &y, &n1, &n2);
-
-        if (!nokb)
-            while (kbhit())
-                getch();
-    }
 }
