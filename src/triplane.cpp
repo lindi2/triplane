@@ -2518,6 +2518,7 @@ void load_up(void) {
             explox[l][l2] = new Bitmap(1 + l2 * 10, 1 + l * 10, 9, 9, plane1);
 
     delete plane1;
+    wfree(point1);
 
     loading_text("Loading AA-MG animations");
 
