@@ -82,6 +82,10 @@ static Uint32 getcolor(unsigned char c) {
 
 void fillrect(int x, int y, int w, int h, int c) {
     SDL_Rect r;
+
+    if (draw_with_vircr_mode)
+        return;
+
     r.x = x;
     r.y = y;
     r.w = w;
