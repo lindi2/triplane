@@ -23,7 +23,7 @@
 #include "gfx/gfx.h"
 #include "util/wutil.h"
 
-void horisontal_split(void) {
+static void horisontal_split(void) {
     Bitmap *upper;
     Bitmap *lower;
     int c1, c2 = 1;
@@ -45,7 +45,7 @@ void horisontal_split(void) {
 
 }
 
-void vertical_split() {
+static void vertical_split() {
     Bitmap *left;
     Bitmap *right;
     int c1, c2;
@@ -70,7 +70,7 @@ void vertical_split() {
 
 }
 
-void pixel_fade(void) {
+static void pixel_fade(void) {
     int c1, c2;
 
     for (c1 = 0; c1 < 20; c1++) {
@@ -86,7 +86,7 @@ void pixel_fade(void) {
 
 }
 
-void partial_fade(void) {
+static void partial_fade(void) {
     unsigned char next_color[256];
     int hit_value, temp_hit_value;
     int c, c2, c3, temp;
