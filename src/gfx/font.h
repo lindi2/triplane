@@ -21,6 +21,7 @@
 #ifndef FONT_H
 #define FONT_H
 
+#include "gfx/bitmap.h"
 
 class Font {
   private:
