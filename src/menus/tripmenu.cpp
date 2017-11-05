@@ -2352,7 +2352,7 @@ void assign_menu(void) {
             ruksi->blit(28 + lx, 45 + ly + lym[config.player_type[l]]);
 
             if (config.player_number[l] == -2) {
-                frost->printf(46 + lx, 82 + ly, "(don't save in roster)");
+                frost->printf(46 + lx, 82 + ly, "Anonymous pilot");
             } else if (config.player_number[l] != -1) {
                 frost->printf(46 + lx, 82 + ly, roster[config.player_number[l]].pilotname);
             }
