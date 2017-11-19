@@ -3184,19 +3184,13 @@ void netgame_menu(void) {
     int exit_flag = 0;
     int i, x, y, n1, n2, menuselect;
     Bitmap *netmenu, *help, *right;
-    Bitmap *napp[4];
-    Bitmap *controlme;
-    Bitmap *upnapp[4];
     Bitmap *assignme, *playerselect;
     char str[100];
     menu_position positions[] = {
         { 40, 43, 1 }, { 168, 43, 1 },
         { 82, 53, 1 }, { 210, 53, 1 },
         { 40, 73, 1 }, { 168, 73, 1 },
-        { 37, 108, 1 }, { 37+1*18, 108, 1 },
-        { 37+2*18, 108, 1 }, { 37+3*18, 108, 1 },
-        { 114, 130, 0 /* (config.netc_controlplanes != 0) */ },
-        { 122, 130, 0 /* (config.netc_controlplanes != 0) */ },
+        { 106, 130, 1 }, { 114, 130, 1 },
         { 40, 153, 1 },
         { 67, 174, 1 }, { 195, 174, 1 }, { 284, 180, 1 },
         { 0, 0, -1 } };
@@ -3205,65 +3199,39 @@ void netgame_menu(void) {
         !roster[config.netc_solo_controls].pilotname[0])
         config.netc_solo_controls = 0;
 
+    if (strcmp(config.netc_playername, "netplayer") == 0 &&
+        roster[config.netc_solo_controls].pilotname[0] &&
+        check_strict_string(roster[config.netc_solo_controls].pilotname, 21))
+        strcpy(config.netc_playername,
+               roster[config.netc_solo_controls].pilotname);
+
     netmenu = new Bitmap("NETMEN");
-    help = new Bitmap("HELP4"); // FIXME no help bitmap yet
     right = new Bitmap("RIGHT");
-    napp[0] = new Bitmap("NAPPRE");
-    napp[1] = new Bitmap("NAPPBL");
-    napp[2] = new Bitmap("NAPPGR");
-    napp[3] = new Bitmap("NAPPYL");
-    controlme = new Bitmap("NAPPIS");
-    upnapp[0] = new Bitmap(11, 23, 12, 11, controlme);
-    upnapp[1] = new Bitmap(38, 23, 12, 11, controlme);
-    upnapp[2] = new Bitmap(11, 46, 12, 11, controlme);
-    upnapp[3] = new Bitmap(38, 46, 12, 11, controlme);
     assignme = new Bitmap("ASSIGN");
-    playerselect = new Bitmap(42, 79, 111, 11, assignme);
+    playerselect = new Bitmap(134, 79, 19, 10, assignme);
 
     while (!exit_flag) {
         menu_keys(&exit_flag, &help_on);
-
-        // can control only 0 or 1 planes
-        for (i = 0; i < 4; i++) {
-            if (config.netc_controlplanes & (1<<i)) {
-                config.netc_controlplanes = 1<<i;
-                break;
-            }
-        }
-
-        positions[10].active = (config.netc_controlplanes != 0);
-        positions[11].active = (config.netc_controlplanes != 0);
         menu_mouse(&x, &y, &n1, &n2, positions);
         netmenu->blit(0, 0);
 
-        frost->printf(20+4, 11, "NETWORK GAME CLIENT");
+        frost->printf(20+4, 11, "JOIN A NETWORK GAME");
 
-        frost->printf(20, 30, "Address of host:");
+        frost->printf(20, 30, "Server address:");
         frost->printf(20+10, 40, "%s", config.netc_host);
-        frost->printf(20, 50, "Port number:");
+        frost->printf(20, 50, "Server port:");
         frost->printf(20+55, 50, "%d", config.netc_port);
         // FIXME hide password?
-        frost->printf(20, 60, "Game password:");
+        frost->printf(20, 60, "Server password:");
         frost->printf(20+10, 70, "%s", config.netc_password);
 
-        frost->printf(20, 80, "Which plane would you\n"
-                      "like to control, if any?\n"
-                      "(the host can change it)");
-        for (i = 0; i < 4; i++)
-            if (config.netc_controlplanes & (1<<i))
-                napp[i]->blit(20+12 + i*18 - 1, 103 - 1);
-            else
-                upnapp[i]->blit(20+12 + i*18, 103);
+	frost->printf(20, 118, "Use solo controls of:");
+	playerselect->blit(101, 125);
+	if (roster[config.netc_solo_controls].pilotname[0])
+            frost->printf(20+10, 128, "%s",
+                          roster[config.netc_solo_controls].pilotname);
 
-        if (config.netc_controlplanes != 0) {
-            frost->printf(20, 118, "Use solo controls of:");
-            playerselect->blit(16, 125);
-            if (roster[config.netc_solo_controls].pilotname[0])
-                frost->printf(20, 128, "%s",
-                              roster[config.netc_solo_controls].pilotname);
-        }
-
-        frost->printf(20, 140, "Your player name:");
+        frost->printf(20, 140, "Player name:");
         frost->printf(20+10, 150, "%s", config.netc_playername);
 
         // FIXME draw the button in the bitmap?
@@ -3273,22 +3241,18 @@ void netgame_menu(void) {
 
         frost->printf(148, 30, "Listen address:");
         frost->printf(148+10, 40, "%s", config.neth_listenaddr);
-        frost->printf(148, 50, "Port number:");
+        frost->printf(148, 50, "Server port:");
         frost->printf(148+55, 50, "%d", config.neth_listenport);
         // FIXME hide password?
-        frost->printf(148, 60, "Game password:");
+        frost->printf(148, 60, "Server password:");
         frost->printf(148+10, 70, "%s", config.neth_password);
 
         // FIXME draw the button in the bitmap?
         if (network_is_active()) {
-            frost->printf(148, 160, "The host is already active");
-            frost->printf(148+5, 170, "[ DEACTIVATE HOST ]");
+            frost->printf(148+5, 170, "[ STOP THE SERVER ]");
         } else {
-            frost->printf(148+3, 170, "[ ACTIVATE THE HOST ]");
+            frost->printf(148+3, 170, "[ START THE SERVER ]");
         }
-
-        if (help_on)
-            help->blit(0, 0);
 
         menuselect = 0;
 
@@ -3308,8 +3272,8 @@ void netgame_menu(void) {
             menuselect = 10 + (x - 20 - 12) / 18;
         }
 
-        if (x >= 110 && x <= 125 && y >= 126 && y <= 126+7) {
-            menuselect = 15 + (x >= 118);
+        if (x >= 102 && x <= 117 && y >= 126 && y <= 126+7) {
+            menuselect = 15 + (x >= 110);
         }
 
         if (x >= 20+10 && x <= 115 && y >= 35 && y <= 49) {
@@ -3361,14 +3325,13 @@ void netgame_menu(void) {
                 frost->printf(20+5, 170, "Connecting... (Esc to abort)");
                 do_all();
                 if (network_is_active()) {
-                    small_warning("You cannot be both host and client\n"
+                    small_warning("You cannot be both server and client\n"
                                   "at the same time.\n"
                                   "\n"
-                                  "Please deactivate the host first.");
+                                  "Please stop the server first.");
                     break;
                 }
-                if (config.netc_controlplanes != 0 &&
-                    !roster[config.netc_solo_controls].pilotname[0]) {
+                if (!roster[config.netc_solo_controls].pilotname[0]) {
                     small_warning("Your roster is empty, but you need a\n"
                                   "player in the roster to set your keys.\n"
                                   "\n"
@@ -3379,16 +3342,9 @@ void netgame_menu(void) {
 
 
                 set_keys_none();
-                if (config.netc_controlplanes == 0) {
-                    netclient_activate_controls(-1, 0);
-                } else {
-                    for (i = 0; i < 4; i++) {
-                        if (config.netc_controlplanes & (1<<i)) {
-                            netclient_activate_controls(i, config.netc_solo_controls);
-                            break;
-                        }
-                    }
-                }
+                /* Hardcode preferred color for now. */
+                netclient_activate_controls(0 /*red*/, config.netc_solo_controls);
+
                 netclient_loop(config.netc_host, config.netc_port,
                                config.netc_playername, config.netc_password);
                 // Return back to netgame menu after client is done
@@ -3426,22 +3382,6 @@ void netgame_menu(void) {
                     }
                     assign_menu();
                 }
-                break;
-
-            case 10: case 11: case 12: case 13: // netc_controlplanes
-                if (config.netc_controlplanes == 0 &&
-                    strcmp(config.netc_playername, "netplayer") == 0 &&
-                    roster[config.netc_solo_controls].pilotname[0] &&
-                    check_strict_string(roster[config.netc_solo_controls].pilotname, 21))
-                    // Solo controls part becomes visible probably for
-                    // the first time
-                    strcpy(config.netc_playername,
-                           roster[config.netc_solo_controls].pilotname);
-                if (config.netc_controlplanes == 1 << (menuselect - 10))
-                    config.netc_controlplanes = 0;
-                else
-                    config.netc_controlplanes = 1 << (menuselect - 10);
-                wait_mouse_relase(); // because this is a toggle
                 break;
 
             case 15:            // Solo controls up arrow
@@ -3533,15 +3473,9 @@ void netgame_menu(void) {
         }
     }
 
-    for (i = 0; i < 4; i++) {
-        delete upnapp[i];
-        delete napp[i];
-    }
 
     delete playerselect;
     delete assignme;
-    delete controlme;
-    delete help;
     delete right;
     delete netmenu;
 

@@ -148,7 +148,7 @@ void network_print_serverinfo(void) {
         if (clients[i].state >= CS_ACCEPTED)
             nclients++;
 
-    netinfo_font->printf(x, y, "Network host active (%d client%s)",
+    netinfo_font->printf(x, y, "Server active (%d client%s)",
                          nclients, nclients==1 ? "" : "s");
     y += linesep;
 
@@ -639,7 +639,7 @@ void network_activate_host(const char *listenaddr,
         exit(1);
     }
 
-    netinfo_printf(0, "Network host listening on TCP port %d", port);
+    netinfo_printf(0, "Server listening on TCP port %d", port);
 
     chat_set_sender(network_chat_send);
 }

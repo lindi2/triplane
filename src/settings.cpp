@@ -435,7 +435,6 @@ void swap_config_endianes(void) {
     clean_string(config.netc_password, 40);
     clean_string(config.netc_playername, 40);
     config.netc_solo_controls = SDL_SwapLE32(config.netc_solo_controls);
-    config.netc_controlplanes = SDL_SwapLE32(config.netc_controlplanes);
 
     clean_string(config.neth_listenaddr, 80);
     config.neth_listenport = SDL_SwapLE32(config.neth_listenport);
@@ -503,7 +502,6 @@ void load_config(void) {
     memset(config.netc_playername, 0, 40);
     strcpy(config.netc_playername, "netplayer");
     config.netc_solo_controls = 1;
-    config.netc_controlplanes = 0;
 
     memset(config.neth_listenaddr, 0, 80);
     strcpy(config.neth_listenaddr, "0.0.0.0");

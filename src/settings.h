@@ -161,7 +161,6 @@ struct configuration {
     char netc_password[40];
     char netc_playername[40];
     int32_t netc_solo_controls;
-    int32_t netc_controlplanes;
 
     char neth_listenaddr[80];
     int32_t neth_listenport;
