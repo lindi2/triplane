@@ -3183,7 +3183,7 @@ void netgame_menu(void) {
     int help_on = 0;
     int exit_flag = 0;
     int i, x, y, n1, n2, menuselect;
-    Bitmap *netmenu, *help, *right;
+    Bitmap *netmenu, *right;
     Bitmap *assignme, *playerselect;
     char str[100];
     menu_position positions[] = {
