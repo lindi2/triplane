@@ -57,7 +57,7 @@ void init_video(void);
 extern unsigned char *vircr;
 extern Bitmap *standard_background;
 extern int current_mode;
-extern int pixel_multiplier_vga, pixel_multiplier_svga;
+extern int pixel_multiplier_vga;
 extern int wantfullscreen;
 
 #endif

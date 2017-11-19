@@ -3677,10 +3677,6 @@ void handle_parameters(void) {
         pixel_multiplier_vga = 4;
     }
 
-    if (findparameter("-2svga")) {
-        pixel_multiplier_svga = 2;
-    }
-
     if (findparameter("-fullscreen")) {
         wantfullscreen = 1;
     }

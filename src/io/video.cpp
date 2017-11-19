@@ -34,7 +34,7 @@ struct naytto ruutu;
 
 int current_mode = VGA_MODE;
 unsigned char *vircr;
-int pixel_multiplier_vga = 1, pixel_multiplier_svga = 1;
+int pixel_multiplier_vga = 1;
 int wantfullscreen = 1;
 
 SDL_Color curpal[256];
