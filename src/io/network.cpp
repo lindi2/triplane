@@ -611,6 +611,7 @@ void network_activate_host(const char *listenaddr,
          */
         controls_clientname[i][0] = '\0';
         controls_active_for_client[i] = -1;
+	net_controls[i] = 0;
     }
 
     listen_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -704,7 +705,7 @@ void network_controls_for_player(int playernum,
     if (!network_host_active)
         return;
 
-    if (controls_active_for_client[playernum] == -1)
+    if (controls_clientname[playernum][0] == '\0')
         return;              /* no network controls for this player */
 
     uint8_t controls = net_controls[playernum];
@@ -953,6 +954,7 @@ void network_reallocate_controls(void) {
             shouldbe = -1;
         if (controls_active_for_client[i] != shouldbe) {
             controls_active_for_client[i] = shouldbe;
+            net_controls[i] = 0;
             // FIXME notify the players of the change?
         }
     }
