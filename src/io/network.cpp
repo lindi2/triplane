@@ -27,7 +27,6 @@
 
 #include "util/wutil.h"
 #include "io/network.h"
-#include "io/chat.h"
 #include "io/video.h"
 #include "gfx/bitmap.h"
 #include <assert.h>
@@ -427,15 +426,6 @@ void netsend_infomsg(const char *msg) {
     write_to_net_fixedstring(msg, 71);
 }
 
-void netsend_chatmsg(const char *sender, const char *msg) {
-    if (!network_host_active)
-        return;
-
-    write_to_net_hdr(97, NET_PKTTYPE_CHATMSG);
-    write_to_net_fixedstring(sender, 21);
-    write_to_net_fixedstring(msg, 71);
-}
-
 void netsend_fillrect(int x, int y, int w, int h, int c) {
     if (!network_host_active || !network_display_enabled)
         return;
@@ -571,11 +561,6 @@ static void send_initial_data(int clientid) {
     netsend_change_target(oldtarget);
 }
 
-/* send chat message originating from host */
-static void network_chat_send(const char *msg) {
-    netinfo_printf(0, "<Host> %s", msg);
-    netsend_chatmsg("", msg);
-}
 
 void network_activate_host(const char *listenaddr,
                            int port,
@@ -641,8 +626,6 @@ void network_activate_host(const char *listenaddr,
     }
 
     netinfo_printf(0, "Server listening on TCP port %d", port);
-
-    chat_set_sender(network_chat_send);
 }
 
 static void net_recv_quit(int client) {
@@ -686,11 +669,6 @@ static void net_recv_set_controls(int client,
         }
     }
     /* else just ignore the packet */
-}
-
-static void net_recv_chatmsg(int client, const char *msg) {
-    netinfo_printf(0, "<%s> %s", clients[client].name, msg);
-    netsend_chatmsg(clients[client].name, msg);
 }
 
 /*
@@ -795,18 +773,6 @@ static void net_receive_packet(int client,
         uint8_t controls = *((uint8_t *)data);
         controls &= 0x3f;       /* only 6 lower bits are used */
         net_recv_set_controls(client, controls);
-    } else if (type == NET_PKTTYPE_C_CHATMSG) {
-        if (length != 76)
-            return;
-        char *msg = &((char *)data)[0];
-        msg[50] = 0;
-        if (!check_printable_string(msg, 71)) {
-            netinfo_printf(0, "Error: invalid chat message from client #%d",
-                           client);
-            client_close(client);
-            return;
-        }
-        net_recv_chatmsg(client, msg);
     } else return;              /* ignores unknown packet types */
 }
 
@@ -1169,8 +1135,6 @@ void network_quit(void) {
 
     if (!network_host_active)
         return;
-
-    chat_set_sender(NULL);
 
     netinfo_printf(1, "Preparing to quit, closing all connections");
 

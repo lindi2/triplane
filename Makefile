@@ -14,7 +14,7 @@ INSTALL_PROGRAM  ?= install
 COMMON_OBJS = src/gfx/bitmap.o src/gfx/font.o \
 	src/gfx/gfx.o src/util/wutil.o src/util/random.o \
 	src/io/sdl_compat.o src/io/video.o src/io/network.o \
-	src/io/chat.o src/io/mouse.o src/io/dksfile.o src/io/timing.o
+	src/io/mouse.o src/io/dksfile.o src/io/timing.o
 TRIPLANE_OBJS = src/triplane.o src/world/tripai.o \
 	src/world/tripmis.o src/gfx/fades.o \
 	src/menus/menusupport.o src/menus/tripmenu.o \

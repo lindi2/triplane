@@ -28,7 +28,6 @@
 #include "triplane.h"
 #include "util/wutil.h"
 #include "io/network.h"
-#include "io/chat.h"
 #include "io/netclient.h"
 #include "io/joystick.h"
 #include "io/sdl_compat.h"
@@ -231,13 +230,6 @@ static void netc_send_setcontrols(uint8_t controls) {
     netc_send_packet(6, NET_PKTTYPE_C_SETCONTROLS, &controls);
 }
 
-static void netc_send_chatmsg(const char *msg) {
-    char data[71];
-    memset(data, 0, 71);
-    strcpy(data, msg);
-    netc_send_packet(76, NET_PKTTYPE_C_CHATMSG, data);
-}
-
 static void netc_recv_quit(void) {
     netc_printf("Server quitting");
     netc_close();
@@ -289,10 +281,6 @@ static void netc_recv_gamemode(uint8_t new_mode) {
 
 static void netc_recv_infomsg(const char *msg) {
     netc_printf("%s", msg);
-}
-
-static void netc_recv_chatmsg(const char *sender, const char *msg) {
-    netc_printf("<%s> %s", (sender[0] == '\0' ? "Host" : sender), msg);
 }
 
 static void netc_recv_fillrect(uint16_t x, uint16_t y,
@@ -409,12 +397,6 @@ static int netc_receive_packet(uint32_t length, uint8_t type, void *data) {
         if (!check_printable_string(cdata, 71))
             return 0;
         netc_recv_infomsg(cdata);
-    } else if (type == NET_PKTTYPE_CHATMSG && length == 97) {
-        if (!check_strict_string(cdata, 21))
-            return 0;
-        if (!check_printable_string(cdata + 21, 71))
-            return 0;
-        netc_recv_chatmsg(cdata, cdata + 21);
     } else if (type == NET_PKTTYPE_FILLRECT && length == 14) {
         uint16_t x = read_from_net_16(cdata);
         uint16_t y = read_from_net_16(cdata + 2);
@@ -807,10 +789,6 @@ void netclient_activate_controls(int countrynum, int rosternum) {
     }
 }
 
-static void netclient_chat_send(const char *msg) {
-    netc_send_chatmsg(msg);
-}
-
 void netclient_loop(const char *host, int port,
                     const char *playername, const char *password) {
     int client_exit = 0;
@@ -827,8 +805,6 @@ void netclient_loop(const char *host, int port,
 
     if (netc_controls_country >= 0)
         netc_send_wantcontrols(netc_controls_country);
-
-    chat_set_sender(netclient_chat_send);
 
     netc_last_endofframe = SDL_GetTicks();
 
@@ -853,8 +829,6 @@ void netclient_loop(const char *host, int port,
         }
         netc_controls();
     }
-
-    chat_set_sender(NULL);
 
     if (netc_socket != -1) {
         netc_printf("Client quitting");

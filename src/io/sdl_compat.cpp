@@ -36,7 +36,6 @@
 #include <assert.h>
 #include "sdl_compat.h"
 #include "io/dksfile.h"
-#include "io/chat.h"
 #include "util/wutil.h"
 #include "io/timing.h"
 
@@ -88,8 +87,7 @@ int getch(void) {
                     s = toupper(s);
                 }
             }
-            if (!chat_input_key(s))
-                return s;
+	    return s;
         }
     }
 
@@ -100,10 +98,7 @@ void update_key_state(void) {
     while (getch() != 0)
         ;
 
-    if (chat_overlay_is_on())
-        key = NULL;
-    else
-        key = SDL_GetKeyboardState(&key_size);
+    key = SDL_GetKeyboardState(&key_size);
 }
 
 void wait_relase(void) {

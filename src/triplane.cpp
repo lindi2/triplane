@@ -27,7 +27,6 @@
 #include "triplane.h"
 #include "io/joystick.h"
 #include "io/netclient.h"
-#include "io/chat.h"
 #include "gfx/gfx.h"
 #include "menus/menusupport.h"
 #include "menus/tripmenu.h"
@@ -3002,9 +3001,6 @@ void load_up(void) {
 
     loading_text("Loading mouse cursor.");
     cursor = new Bitmap("CURSOR");
-
-    loading_text("Loading data for chat support.");
-    chat_overlay_init(frost); // not foverlay since a background is drawn
 }
 
 

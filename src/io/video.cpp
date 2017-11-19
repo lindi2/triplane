@@ -21,7 +21,6 @@
 #include "io/video.h"
 #include "io/dksfile.h"
 #include "io/network.h"
-#include "io/chat.h"
 #include "util/wutil.h"
 #include <SDL.h>
 #include <signal.h>
@@ -104,7 +103,6 @@ void fillrect(int x, int y, int w, int h, int c) {
 void do_all(int do_retrace) {
     // this code is called at the end of every displayed frame
     network_print_serverinfo();
-    chat_draw_overlay();
 
     int w = (current_mode == VGA_MODE) ? 320 : 800;
     int wh = (current_mode == VGA_MODE) ? 320 * 200 : 800 * 600;

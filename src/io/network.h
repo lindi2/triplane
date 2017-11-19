@@ -90,12 +90,6 @@
  * length=76
  * (should be displayed somewhere on screen for a while)
  *
- * type=NET_PKTTYPE_CHATMSG:       received chat message
- *   char sender[21]               client player name, or empty for host
- *   char msg[71]                  only [a-zA-Z0-9] characters
- * length=97
- * (should be displayed somewhere on screen for a while)
- *
  * type=NET_PKTTYPE_FILLRECT:
  *   uint16_t x, y, w, h           coordinates are always inside the screen
  *   uint8_t color
@@ -191,10 +185,6 @@
  * the client should send these packets only when the game mode set by
  * NET_PKTTYPE_GAMEMODE is 1)
  *
- * type=NET_PKTTYPE_C_CHATMSG:     public oneline chat message (shown to all)
- *   char msg[71]                  only [a-zA-Z0-9] characters are accepted
- * length=76
- *
  * A very simple dummy client for debugging and seeing how much data
  * is sent (the echo command sends a C_GREETING packet using the default
  * password):
@@ -214,7 +204,7 @@
 #define NET_PKTTYPE_PING                6
 #define NET_PKTTYPE_GAMEMODE            7
 #define NET_PKTTYPE_INFOMSG             8
-#define NET_PKTTYPE_CHATMSG             9
+//#define NET_PKTTYPE_CHATMSG             9
 
 #define NET_PKTTYPE_FILLRECT           10
 #define NET_PKTTYPE_BITMAPDATA         11
@@ -239,7 +229,7 @@
 #define NET_PKTTYPE_C_DISABLECONTROLS  212
 #define NET_PKTTYPE_C_SETCONTROLS      213
 
-#define NET_PKTTYPE_C_CHATMSG          220
+//#define NET_PKTTYPE_C_CHATMSG          220
 
 void netsend_videomode(char new_mode);
 void netsend_setpal_range(const char pal[][3],
