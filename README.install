@@ -8,6 +8,7 @@ Dependencies
 * SDL 2.0
 * SDL mixer 2.0
 * GNU make
+* zlib
 
 Build procedure
 ---------------
