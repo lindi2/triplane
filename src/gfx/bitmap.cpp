@@ -70,17 +70,6 @@ static void all_bitmaps_delete(int id) {
     all_bitmaps[id] = NULL;
 }
 
-void all_bitmaps_refresh(void) {
-    int i;
-
-    for (i = 0; i < MAX_BITMAPS; i++) {
-        if (all_bitmaps[i] == NULL)
-            continue;
-        if (!draw_with_vircr_mode)
-            all_bitmaps[i]->refresh_sdlsurface();
-    }
-}
-
 void all_bitmaps_resend_if_sent(void) {
     int i;
 
@@ -99,41 +88,6 @@ void all_bitmaps_send_now(void) {
             continue;
         all_bitmaps[i]->send_bitmapdata();
     }
-}
-
-void Bitmap::refresh_sdlsurface() {
-    SDL_Surface *tmps;
-
-    if (sdlsurface != NULL) {
-        SDL_DestroyTexture(sdlsurface);
-        sdlsurface = NULL;
-    }
-
-    if (draw_with_vircr_mode)
-        return;                 /* sdlsurfaces are not used */
-
-    tmps = SDL_CreateRGBSurfaceFrom(image_data, width, height, 8, width, 0, 0, 0, 0);
-
-    if (tmps == NULL) {
-        fprintf(stderr, "SDL_CreateRGBSurfaceFrom: %s\n", SDL_GetError());
-        exit(1);
-    }
-
-    SDL_Palette *tmppal = SDL_AllocPalette(256);
-    SDL_SetPaletteColors(tmppal, curpal, 0, 256);
-    SDL_SetSurfacePalette(tmps, tmppal);
-
-    if (hastransparency)
-        SDL_SetColorKey(tmps, SDL_TRUE, 0xff);
-
-    sdlsurface = SDL_CreateTextureFromSurface(video_state.renderer, tmps);
-    if (sdlsurface == NULL) {
-        fprintf(stderr, "SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
-        exit(1);
-    }
-
-    SDL_FreeSurface(tmps);
-    SDL_FreePalette(tmppal);
 }
 
 void Bitmap::send_bitmapdata() {
@@ -219,10 +173,8 @@ Bitmap::Bitmap(const char *image_name, int transparent) {
 
     name = image_name;
     hastransparency = transparent;
-    sdlsurface = NULL;
     data_sent = 0;
     id = all_bitmaps_add(this);
-    refresh_sdlsurface();
 }
 
 
@@ -235,7 +187,6 @@ Bitmap::Bitmap(int width, int height,
     this->height = height;
     this->name = name;
     this->hastransparency = hastransparency;
-    this->sdlsurface = NULL;
     this->data_sent = 0;
 
     if (copy_image_data) {
@@ -248,16 +199,11 @@ Bitmap::Bitmap(int width, int height,
     }
 
     this->id = all_bitmaps_add(this);
-    refresh_sdlsurface();
 }
 
 
 Bitmap::~Bitmap() {
     all_bitmaps_delete(id);
-    if (sdlsurface != NULL) {
-        SDL_DestroyTexture(sdlsurface);
-        sdlsurface = NULL;
-    }
     if (!external_image_data)
         free(image_data);
     netsend_bitmapdel(id);
@@ -271,12 +217,7 @@ void Bitmap::blit_fullscreen(void) {
     send_bitmapdata();
     netsend_bitmapblitfs(id);
 
-    if (update_vircr_mode)
-        memcpy(vircr, image_data, 320 * 200);
-
-    if (!draw_with_vircr_mode) {
-        SDL_RenderCopy(video_state.renderer, sdlsurface, NULL, NULL);
-    }
+    memcpy(vircr, image_data, 320 * 200);
 }
 
 /*
@@ -286,7 +227,6 @@ void Bitmap::blit_fullscreen(void) {
 void Bitmap::blit(int xx, int yy, int rx, int ry, int rx2, int ry2) {
     int fromminy, fromminx, frommaxy, frommaxx, bwidth;
     int xi, yi, tx, ty;
-    SDL_Rect clip, pos;
 
     if (current_mode == SVGA_MODE) {
         if (rx == 0 && ry == 0 && rx2 == 319 && ry2 == 199) {
@@ -329,44 +269,25 @@ void Bitmap::blit(int xx, int yy, int rx, int ry, int rx2, int ry2) {
     else
         netsend_bitmapblitclipped(id, xx, yy, rx, ry, rx2, ry2);
 
-    if (update_vircr_mode) {
-        fromminy = (yy >= ry) ? 0 : ry - yy;
-        fromminx = (xx >= rx) ? 0 : rx - xx;
-        frommaxy = (yy + height - 1 <= ry2) ? height - 1 : ry2 - yy;
-        frommaxx = (xx + width - 1 <= rx2) ? width - 1 : rx2 - xx;
+    fromminy = (yy >= ry) ? 0 : ry - yy;
+    fromminx = (xx >= rx) ? 0 : rx - xx;
+    frommaxy = (yy + height - 1 <= ry2) ? height - 1 : ry2 - yy;
+    frommaxx = (xx + width - 1 <= rx2) ? width - 1 : rx2 - xx;
 
-        if (fromminx <= frommaxx) {
-            if (hastransparency) {
-                for (yi = fromminy, ty = fromminy + yy; yi <= frommaxy; yi++, ty++) {
-                    for (xi = fromminx, tx = fromminx + xx; xi <= frommaxx; xi++, tx++) {
-                        unsigned char val = image_data[width * yi + xi];
-                        if (val != 0xff) {
-                            vircr[bwidth * ty + tx] = val;
-                        }
+    if (fromminx <= frommaxx) {
+        if (hastransparency) {
+            for (yi = fromminy, ty = fromminy + yy; yi <= frommaxy; yi++, ty++) {
+                for (xi = fromminx, tx = fromminx + xx; xi <= frommaxx; xi++, tx++) {
+                    unsigned char val = image_data[width * yi + xi];
+                    if (val != 0xff) {
+                        vircr[bwidth * ty + tx] = val;
                     }
                 }
-            } else {            /* can use memcpy without transparency */
-                for (yi = fromminy, ty = fromminy + yy; yi <= frommaxy; yi++, ty++)
-                    memcpy(&vircr[bwidth * ty + fromminx + xx], &image_data[width * yi + fromminx], frommaxx - fromminx + 1);
             }
+        } else {            /* can use memcpy without transparency */
+            for (yi = fromminy, ty = fromminy + yy; yi <= frommaxy; yi++, ty++)
+                memcpy(&vircr[bwidth * ty + fromminx + xx], &image_data[width * yi + fromminx], frommaxx - fromminx + 1);
         }
-    }
-
-    if (!draw_with_vircr_mode) {
-        clip.x = rx;
-        clip.y = ry;
-        clip.w = rx2 - rx + 1;
-        clip.h = ry2 - ry + 1;
-        pos.x = xx;
-        pos.y = yy;
-        pos.w = width;
-        pos.h = height;
-        SDL_RenderSetClipRect(video_state.renderer, &clip);
-        if (SDL_RenderCopy(video_state.renderer, sdlsurface, NULL, &pos) != 0) {
-            fprintf(stderr, "SDL_RenderCopy: %s\n", SDL_GetError());
-            exit(1);
-        }
-        SDL_RenderSetClipRect(video_state.renderer, NULL);
     }
 }
 
@@ -399,18 +320,14 @@ Bitmap::Bitmap(int x1, int y1, int xl, int yl, Bitmap * source_image) {
 
     name = source_image->name;
     hastransparency = source_image->hastransparency;
-    sdlsurface = NULL;
     data_sent = 0;
     id = all_bitmaps_add(this);
-    refresh_sdlsurface();
 }
 
 /* Create a new Bitmap from the contents of vircr at (x,y) to (x+w,y+h) */
 Bitmap::Bitmap(int x, int y, int w, int h) {
     int vircrw = (current_mode == VGA_MODE) ? 320 : 800;
     int fromy, toy;
-
-    assert(update_vircr_mode);  /* otherwise vircr may not be valid */
 
     width = w;
     height = h;
@@ -422,10 +339,8 @@ Bitmap::Bitmap(int x, int y, int w, int h) {
 
     name = "from_vircr";
     hastransparency = 0;
-    sdlsurface = NULL;
     data_sent = 0;
     id = all_bitmaps_add(this);
-    refresh_sdlsurface();
 }
 
 void Bitmap::blit_to_bitmap(Bitmap * to, int xx, int yy) {
@@ -454,7 +369,6 @@ void Bitmap::blit_to_bitmap(Bitmap * to, int xx, int yy) {
       send_bitmapdata();
       netsend_blittobitmap(id, to->id, xx, yy);
     }
-    to->refresh_sdlsurface();
 }
 
 void Bitmap::recolor(unsigned char oldcolor, unsigned char newcolor) {
@@ -467,7 +381,6 @@ void Bitmap::recolor(unsigned char oldcolor, unsigned char newcolor) {
             image_data[i] = newcolor;
 
     data_sent = 0;
-    refresh_sdlsurface();
 }
 
 void Bitmap::blit_data(int tox, int toy,
@@ -509,7 +422,6 @@ void Bitmap::outline(unsigned char outlinecolor) {
 
     wfree(old_data);
     data_sent = 0;
-    refresh_sdlsurface();
 }
 
 Bitmap *rotate_bitmap(Bitmap * picture, int degrees) {
@@ -547,7 +459,6 @@ Bitmap *rotate_bitmap(Bitmap * picture, int degrees) {
     free(temp_data);
 
     picture2->clear_data_sent();
-    picture2->refresh_sdlsurface();
     return picture2;
 }
 

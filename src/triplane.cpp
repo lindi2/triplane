@@ -1765,9 +1765,6 @@ void main_engine(void) {
     //// Record
     setwrandom(7);
 
-    if (!draw_with_vircr_mode)
-        update_vircr_mode = 0;
-
     all_bitmaps_send_now();
 
     network_ping(15);
@@ -1989,9 +1986,6 @@ void main_engine(void) {
     }
 
     network_change_game_mode(0);
-
-    if (!draw_with_vircr_mode)
-        update_vircr_mode = 1;
 
     wait_relase();
     mission_re_fly = -1;
@@ -3693,10 +3687,6 @@ void handle_parameters(void) {
 
     if (findparameter("-nofullscreen")) {
         wantfullscreen = 0;
-    }
-
-    if (findparameter("-sdldraw")) {
-        draw_with_vircr_mode = 0;
     }
 }
 

@@ -34,8 +34,6 @@ struct naytto ruutu;
 
 int current_mode = VGA_MODE;
 unsigned char *vircr;
-int update_vircr_mode = 1;
-int draw_with_vircr_mode = 1;
 int pixel_multiplier_vga = 1, pixel_multiplier_svga = 1;
 int wantfullscreen = 1;
 
@@ -73,9 +71,6 @@ void setpal_range(const char pal[][3], int firstcolor, int n, int reverse) {
 
     memcpy(&curpal[firstcolor], cc, n * sizeof(SDL_Color));
     wfree(cc);
-
-    if (n != 8)             // FIXME hack to ignore rotate_water_palet
-        all_bitmaps_refresh();
 }
 
 void netsend_mode_and_curpal(void) {
@@ -94,34 +89,16 @@ void netsend_mode_and_curpal(void) {
 }
 
 void fillrect(int x, int y, int w, int h, int c) {
-    SDL_Rect r;
-
     netsend_fillrect(x, y, w, h, c);
 
-    if (update_vircr_mode) {
-        int screenw = (current_mode == VGA_MODE) ? 320 : 800;
-        if (w == 1 && h == 1) {
-            vircr[x + y * screenw] = c;
-        } else {
-            int i;
-            for (i = 0; i < h; i++)
-                memset(&vircr[x + (y + i) * screenw], c, w);
-        }
+    int screenw = (current_mode == VGA_MODE) ? 320 : 800;
+    if (w == 1 && h == 1) {
+        vircr[x + y * screenw] = c;
+    } else {
+        int i;
+        for (i = 0; i < h; i++)
+            memset(&vircr[x + (y + i) * screenw], c, w);
     }
-
-    if (draw_with_vircr_mode)
-        return;
-
-    r.x = x;
-    r.y = y;
-    r.w = w;
-    r.h = h;
-    SDL_SetRenderDrawColor(video_state.renderer,
-                           curpal[c].r,
-                           curpal[c].g,
-                           curpal[c].b,
-                           curpal[c].a);
-    SDL_RenderFillRect(video_state.renderer, &r);
 }
 
 void do_all(int do_retrace) {
@@ -129,33 +106,27 @@ void do_all(int do_retrace) {
     network_print_serverinfo();
     chat_draw_overlay();
 
-    if (draw_with_vircr_mode) {
-        int w = (current_mode == VGA_MODE) ? 320 : 800;
-        int wh = (current_mode == VGA_MODE) ? 320 * 200 : 800 * 600;
-        int i;
-        uint8_t *in = vircr;
-        uint32_t *out = video_state.texture_buffer;
+    int w = (current_mode == VGA_MODE) ? 320 : 800;
+    int wh = (current_mode == VGA_MODE) ? 320 * 200 : 800 * 600;
+    int i;
+    uint8_t *in = vircr;
+    uint32_t *out = video_state.texture_buffer;
+    
+    for (i = 0; i < wh; i++, in++, out++)
+        *out = ((255 << 24) |
+                (curpal[*in].r << 16) |
+                (curpal[*in].g << 8) |
+                curpal[*in].b);
+    
+    SDL_UpdateTexture(video_state.texture,
+                      NULL,
+                      video_state.texture_buffer,
+                      w * sizeof(uint32_t));
+    SDL_SetRenderDrawColor(video_state.renderer, 0, 0, 0, 255);
+    SDL_RenderClear(video_state.renderer);
+    SDL_RenderCopy(video_state.renderer, video_state.texture, NULL, NULL);
 
-        for (i = 0; i < wh; i++, in++, out++)
-            *out = ((255 << 24) |
-                    (curpal[*in].r << 16) |
-                    (curpal[*in].g << 8) |
-                    curpal[*in].b);
-
-        SDL_UpdateTexture(video_state.texture,
-                          NULL,
-                          video_state.texture_buffer,
-                          w * sizeof(uint32_t));
-        SDL_SetRenderDrawColor(video_state.renderer, 0, 0, 0, 255);
-        SDL_RenderClear(video_state.renderer);
-        SDL_RenderCopy(video_state.renderer, video_state.texture, NULL, NULL);
-    }
     SDL_RenderPresent(video_state.renderer);
-    if (!draw_with_vircr_mode) {
-        // Prepare for drawing the next frame
-        SDL_SetRenderDrawColor(video_state.renderer, 0, 0, 0, 255);
-        SDL_RenderClear(video_state.renderer);
-    }
 
     netsend_endofframe();
     network_update();
@@ -214,15 +185,13 @@ static int init_mode(int new_mode, const char *paletname) {
 
     SDL_RenderSetLogicalSize(video_state.renderer, w, h);
 
-    if (draw_with_vircr_mode) {
-        video_state.texture = SDL_CreateTexture(video_state.renderer,
-                                                SDL_PIXELFORMAT_ARGB8888,
-                                                SDL_TEXTUREACCESS_STREAMING,
-                                                w,
-                                                h);
-        assert(video_state.texture);
-        video_state.texture_buffer = (uint32_t *) walloc(w * h * sizeof(uint32_t));
-    }
+    video_state.texture = SDL_CreateTexture(video_state.renderer,
+                                            SDL_PIXELFORMAT_ARGB8888,
+                                            SDL_TEXTUREACCESS_STREAMING,
+                                            w,
+                                            h);
+    assert(video_state.texture);
+    video_state.texture_buffer = (uint32_t *) walloc(w * h * sizeof(uint32_t));
 
     dksopen(paletname);
 

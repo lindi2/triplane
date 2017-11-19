@@ -32,7 +32,6 @@ class Bitmap {
     int external_image_data;    // boolean: is image_data owned by this instance
     int hastransparency;
     int id;                     // a unique ID for this Bitmap
-    SDL_Texture *sdlsurface;    // the field name derives from SDL 1.x legacy
     int data_sent;              // has image_data been sent to the network?
 
   public:
@@ -53,7 +52,6 @@ class Bitmap {
     void outline(unsigned char outlinecolor);
 
     unsigned char *info(int *width = NULL, int *height = NULL);
-    void refresh_sdlsurface();
     void clear_data_sent();
     void send_bitmapdata();
     void resend_bitmapdata();
@@ -64,7 +62,6 @@ class Bitmap {
                    int mask_color=-1);
 };
 
-void all_bitmaps_refresh(void);
 void all_bitmaps_resend_if_sent(void);
 void all_bitmaps_send_now(void);
 Bitmap *rotate_bitmap(Bitmap * picture, int degrees);
