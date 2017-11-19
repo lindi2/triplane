@@ -966,39 +966,24 @@ const char *network_controlling_player_string(int playernum) {
         return "no network game";
 
     if (controls_clientname[playernum][0] == '\0') {
-        return "played by host";
+        return "local player";
     } else if (controls_active_for_client[playernum] == -1) {
-        sprintf(buf, "%s should play",
+        sprintf(buf, "remote player %s",
                 controls_clientname[playernum]);
     } else {
-        sprintf(buf, "%s plays",
+        sprintf(buf, "remote player %s",
                 clients[controls_active_for_client[playernum]].name);
     }
     return buf;
 }
 
 void network_change_game_mode(int newmode) {
-    char buf[200];
-
     game_mode = newmode;
 
     if (!network_host_active)
         return;
 
     netsend_gamemode(newmode);
-
-    if (newmode == 1) {
-        strcpy(buf, "Controls: R: ");
-        strcat(buf, network_controlling_player_string(0));
-        strcat(buf, " B: ");
-        strcat(buf, network_controlling_player_string(1));
-        netinfo_printf(1, "%s", buf);
-        strcpy(buf, "Controls: G: ");
-        strcat(buf, network_controlling_player_string(2));
-        strcat(buf, " Y: ");
-        strcat(buf, network_controlling_player_string(3));
-        netinfo_printf(1, "%s", buf);
-    }
 }
 
 static void network_handle_timeouts() {

@@ -2334,9 +2334,7 @@ void assign_menu(void) {
     int lym[4] = { 0, 11, 24, 36 };
     int response;
     int help_on = 0;
-    int plane_colors[4] = { 32, 144, 96, 71 };
     char clientname[4][21] = { "", "", "", "" };
-    int clientcolor[4] = { -1, -1, -1, -1 };
     char tmpname[21] = "";
     char unallocated[200] = "";
     bool autoallocate[4] = { true, true, true, true };
@@ -2377,7 +2375,6 @@ void assign_menu(void) {
     if (network_is_active()) {
         for (l = 0; l < 4; l++) {
             network_get_allowed_controls(l, clientname[l]);
-            clientcolor[l] = network_find_preferred_color(clientname[l]);
         }
     }
 
@@ -2442,7 +2439,6 @@ void assign_menu(void) {
                 config.player_type[l] = 3;
             allocate:
                 strcpy(clientname[l], tmpname);
-                clientcolor[l] = l;
                 set_roster_from_clientname(l, clientname[l]);
                 continue;
             notallocated:
@@ -2513,13 +2509,9 @@ void assign_menu(void) {
                     continue;
 
                 if (clientname[l][0] == '\0') {
-                    frost->printf(46 + lx, 70 + ly, "Controlled by host only");
+                    frost->printf(46 + lx, 70 + ly, "Local player");
                 } else {
-                    frost->printf(46 + lx, 70 + ly, "Net:  %s", clientname[l]);
-                    if (clientcolor[l] >= 0 && clientcolor[l] <= 3)
-                        fill_vircr(46 + lx + 16, 70 + ly + 1,
-                                   46 + lx + 18, 70 + ly + 3,
-                                   plane_colors[clientcolor[l]]);
+                    frost->printf(46 + lx, 70 + ly, "Remote: %s", clientname[l]);
                 }
 
                 if (x >= (134 + lx) && x < (143 + lx) && y >= (67 + ly) && y <= (77 + ly)) {
@@ -2533,11 +2525,6 @@ void assign_menu(void) {
                     menuselect = 6;
                     //frost->printf(82,177,"Select previous network player");
                 }
-            }
-
-            if (unallocated[0] != '\0') {
-                frost->printf(30, 175, "Network players wanting controls:");
-                frost->printf(45, 185, "%s", unallocated);
             }
         }
 
@@ -2618,7 +2605,6 @@ void assign_menu(void) {
                     for (l = 0; l < 4; l++) {
                         if (config.player_type[l] == 0 || config.player_type[l] == 2) {
                             clientname[l][0] = '\0';
-                            clientcolor[l] = -1;
                         }
                     }
                 }
@@ -2686,8 +2672,6 @@ void assign_menu(void) {
             case 5: case 6:
                 network_find_next_controls((menuselect == 6),
                                            clientname[menusubselect1]);
-                clientcolor[menusubselect1] =
-                    network_find_preferred_color(clientname[menusubselect1]);
                 set_roster_from_clientname(menusubselect1,
                                            clientname[menusubselect1]);
                 break;
