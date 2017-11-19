@@ -3665,6 +3665,10 @@ void handle_parameters(void) {
         loading_text("Sounds disabled.");
     }
 
+    if (findparameter("-1")) {
+        pixel_multiplier_vga = 1;
+    }
+    
     if (findparameter("-2")) {
         pixel_multiplier_vga = 2;
     }
