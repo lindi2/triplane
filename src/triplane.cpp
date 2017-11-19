@@ -2478,7 +2478,7 @@ void load_up(void) {
         fontti = new Font("FONTT");
         grid2 = new Font("G2FONT");
         grid2->scale();
-        foverlay = new Font("GRFONT", 123, 116);
+        foverlay = new Font("GRFONT", 0, 116);
         foverlay->scale();
     }
 
